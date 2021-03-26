@@ -1,9 +1,10 @@
 
 
 #######
-# Reef landscapers: Linking functional diversity in fish feeding impacts on coral juvenile success
-# Analysis code
-# Student 190020993
+# Responses to fish trait diversity in coral settlement and recruitment
+# Data cleanup
+# Author: Cher Chow
+# Updated: 26 Mar 2021
 #######
 
 
@@ -11,9 +12,11 @@
 
 require(tidyverse) # data handling
 require(readxl) # import xls files
-require(ggplot2)
-require(patchwork)
 require(rfishbase) # for retrieving functional trait data
+
+require(ggplot2) # plotting
+require(patchwork) # multipanel plotting
+
 
 require(FD) # calculate dissimilarity matrices + functional diversity indices
 require(geometry) # calculates convex hull/trait space for data vis
@@ -27,21 +30,22 @@ quartzFonts(Public=c('Public Sans Regular', 'Public Sans Italic', 'Public Sans B
 par(family='Public')
 looks <- theme_bw(base_size=13, base_family = 'Public Sans') + theme(panel.grid=element_blank(), axis.ticks=element_line(size=0.3))
 
+# functions
 ci.pred <- function(.) predict(., newx, type='response', re.form=NA)
 source('convhullvert_function.R') # convex hull vertices for plotting function
 
 ## ----Data import'------------------------------------------------------------------------------------------------
-# read in data, species and bite data
-# ubruv.data <- read_csv('UBRUV_species_2019.csv', col_names=T)
-# head(ubruv.data)
-files = list.files(path='../DataFish/UBRUV_bite/', pattern='*.csv', full.names = T)
+
+# read in bite data from folder
+files = list.files(path='/Users/cher/OneDrive - University of St Andrews/Dissertation/DataFish/UBRUV_bite', pattern='*.csv', full.names = T)
 bite.sheets = lapply(files, read.csv, header=T) # read in all the xls files in the folder
 bite.data <- do.call(rbind, bite.sheets)
 head(bite.data, n=10)
 rm(bite.sheets)
 rm(files)
 
-files = list.files(path='../DataFish/UBRUV_spL/', pattern='*.xls', full.names = T)
+# read in assemblage data from folder
+files = list.files(path='/Users/cher/OneDrive - University of St Andrews/Dissertation/DataFish/UBRUV_spL/', pattern='*.xls', full.names = T)
 sp.sheets = lapply(files, read_xlsx, sheet=1, col_names=T, col_types=c('date',rep('text', 6),'numeric',rep('text', 4))) # read in all the xls files in the folder
 ubruv.data <- do.call(rbind, sp.sheets)
 head(ubruv.data)
@@ -52,6 +56,7 @@ rm(files)
 # ----check and trim-------------------------------------------------------------------------------------------------------------
 str(ubruv.data)
 summary(ubruv.data)
+
 # do some species ID corrections per Andy Hoey
 corrections <- c('Naso brevirostris',
                  'Thalassoma lutescens',
@@ -109,7 +114,6 @@ Sp.count$genus <- word(Sp.count$SpeciesV, 1) # add genus column to the species c
 Sp.count <- left_join(Sp.count, distinct(Sp.list[,2:3]), by='genus') # and add family taxonomic info too
 
 
-
 ## ----Species prevalences, echo=FALSE--------------------------------------------------------------------------------------------
 ggplot(head(Sp.count[order(Sp.count$family),] %>% filter(n > 5), n=15), aes(y=Species, x=n)) +
   geom_bar(aes(fill=family), color='transparent', stat='identity') +
@@ -149,7 +153,7 @@ str(bite.data)
 summary(bite.data)
 
 
-## ----Validate names, results='hide', code_folding='hide'------------------------------------------------------------------------
+## ----Validate names------------------------------------------------------------------------
 # check if there are any species IDs at the genus level
 sum(str_detect(bite.data$Species, ' sp$')+0)
 # ok, no genus IDs to replace/fix. validate the names from WoRMS.
