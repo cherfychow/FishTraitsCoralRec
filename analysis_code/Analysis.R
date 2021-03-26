@@ -68,19 +68,26 @@ names(corrections) <- c('^Naso annulatus$',
                         '^Bodianus bimaculatus')
 ubruv.data$Species <- str_replace_all(ubruv.data$Species, corrections)
 length(unique(ubruv.data$Species)) # 117 species recorded
-ubruv.trim <- filter(ubruv.data, str_detect(Species, 'idae|unknown', negate = TRUE)) #remove uncertain observations at Family level or higher
+ubruv.trim <- filter(ubruv.data, str_detect(Species, 'idae|unknown', negate = TRUE))
+# remove uncertain observations at Family level or higher
 # 468 observations left, removed 7 rows
+# We went from ubruv.data > ubruv.trim to remove uncertain records
+rm(ubruv.data) # we can remove this object now
 
 
 ## ----taxon spell check, results='hide'------------------------------------------------------------------------------------------
-Sp <- sort(unique(str_replace(ubruv.trim$Species, ' sp$', '')))
+
+Sp <- sort(unique(str_replace(ubruv.trim$Species, ' sp$', ''))) # e.g. change "Scarus sp" to "Scarus" for WoRMS validation
 Sp <- unique(str_replace(Sp, ' $', '')) # remove accidental duplicates ending with spaces
-# e.g. change "Scarus sp" to "Scarus" for WoRMS validation
 require(worms) # package for validating species/taxa names
-Sp.list <- wormsbymatchnames(Sp, marine_only=T, chunksize = 49) # feed it into worms package to check
-Sp.list$ID <- seq(1, length(Sp.list$valid_name), by=1)
+
+## Warning: WoRMS is computationally heavy! Might take a few minutes
+Sp.list <- wormsbymatchnames(Sp, marine_only=T, chunksize = 49) # retrieve WoRMS checks
+Sp.list$ID <- seq(1, length(Sp.list$valid_name), by=1) # create an ID column
+
+# create a list of invalid species names to check
 invalid <- Sp.list %>% filter(match_type != 'exact' | status != 'accepted') %>% select(ID, valid_name, family, genus)
-invalid$before <- Sp[invalid$ID]
+invalid$before <- Sp[invalid$ID] # retrieve the invalid species names
 ubruv.validated <- ubruv.trim # create a duplicate of the trimmed dataset to replace with validated names
 
 validate <- invalid$valid_name
@@ -93,14 +100,24 @@ names(length.convert) <- paste('^', sort(unique(ubruv.validated$Length)), '$', s
 ubruv.validated$Length <- str_replace_all(ubruv.validated$Length, length.convert)
 detach(package:worms)
 detach(package:plyr)
+# and now from ubruv.trim > ubruv.validated after name checks
+rm(ubruv.trim)
+rm(invalid)
 
 
 ## ----species summary------------------------------------------------------------------------------------------------------------
-Sp.list <- Sp.list %>% select(valid_name, family) %>% mutate(genus=word(valid_name, 1)) # let's trim the worms table to just taxonomic info, and extract genus from the valid name, not the record that matches the wrong species
+Sp.list <- Sp.list %>% select(valid_name, family) %>% mutate(genus=word(valid_name, 1))
+# let's trim the worms table to just taxonomic info, and extract genus from the valid name
 
-Sp.count <- as_tibble(ubruv.validated) %>% group_by(SpeciesV) %>% summarise(n=sum(Count)) %>% filter(str_detect(SpeciesV, ' sp$', negate=T)) # counts per species
-Sp.countL <- as_tibble(ubruv.validated) %>% group_by(SpeciesV, Length) %>% summarise(n=sum(Count)) # counts per species and length class
+Sp.count <- as_tibble(ubruv.validated) %>% 
+  group_by(SpeciesV) %>% summarise(n=sum(Count)) %>% 
+  filter(str_detect(SpeciesV, ' sp$', negate=T))# counts per species
+
+Sp.countL <- as_tibble(ubruv.validated) %>% 
+  group_by(SpeciesV, Length) %>% summarise(n=sum(Count)) # counts per species and length class
+
 ubruv.validated %>% group_by(Site) %>% summarise(n=sum(Count)) # total number of fish per site
+
 UBRUVspecies <- ubruv.validated %>% group_by(Site, SpeciesV) %>% summarise(n=sum(Count)) # counts per species grouped by site
 UBRUVspeciesL <- ubruv.validated %>% group_by(Site, SpeciesV, Length) %>% summarise(n=sum(Count))
 # make a separate tibble for grouping by length classes
@@ -112,19 +129,6 @@ UBRUVspecies <- left_join(UBRUVspecies, distinct(Sp.list[,2:3]), by='genus') # a
 
 Sp.count$genus <- word(Sp.count$SpeciesV, 1) # add genus column to the species count summary tibble
 Sp.count <- left_join(Sp.count, distinct(Sp.list[,2:3]), by='genus') # and add family taxonomic info too
-
-
-## ----Species prevalences, echo=FALSE--------------------------------------------------------------------------------------------
-ggplot(head(Sp.count[order(Sp.count$family),] %>% filter(n > 5), n=15), aes(y=Species, x=n)) +
-  geom_bar(aes(fill=family), color='transparent', stat='identity') +
-  labs(y='Species', x='Count') +
-  scale_fill_discrete(name='Family') +
-  looks + scale_x_continuous(expand=expansion(mult=c(0,.1)))
-
-ggplot(Sp.count %>% filter(n > 5) %>% group_by(family) %>% summarise(totalF=sum(n)), aes(y=family, x=totalF)) +
-  geom_bar(fill='white', color='black', stat='identity') +
-  labs(y='Family', x='Count') +
-  looks + scale_x_continuous(expand=expansion(mult=c(0,.1)))
 
 
 ## ----site composition plot, echo=FALSE------------------------------------------------------------------------------------------
