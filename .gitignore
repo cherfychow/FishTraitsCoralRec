@@ -1,5 +1,10 @@
-# Mac desktop services
+# Mac auxiliary files
 .DS_Store
+*._*
+
+# ignore code outputs
+/figures/
+
 # History files
 .Rhistory
 .Rapp.history

@@ -1071,9 +1071,9 @@ sp.inf <-  data.frame(Species=influence$Species, SpInf=inf.pca$scores[,1])
 sp.inf$SpInf <- (sp.inf$SpInf + (-range(sp.inf$SpInf)[1]) + 0.1)/2
 
 # Now use it to calculate bite rate
-FeedRate3 <- left_join(FeedRate, sp.inf, by='Species') %>% mutate(SpFeed=0.01*SpInf*sumLBi) %>% group_by(Site) %>% summarise(FeedRate3=sum(SpFeed))
-predictors$FeedRate3 <- FeedRate3$FeedRate3
-predictors$FeedRate3 <- scale(predictors$FeedRate3, scale=T, center=F)
+ForRate <- left_join(FeedRate, sp.inf, by='Species') %>% mutate(SpFeed=0.01*SpInf*sumLBi) %>% group_by(Site) %>% summarise(ForRate=sum(SpFeed))
+predictors$ForRate <- ForRate$ForRate
+predictors$ForRate <- scale(predictors$ForRate, scale=T, center=F)
 
 feedF <- feed %>% group_by(Site,TrophicGroup, ForageMode) %>% summarise(Feed=sum(SpFeed), Infl=mean(SpInf))
 feedF <- factor(feedF$ForageMode, levels=feed$ForageMode[order(feedF$Infl)])
@@ -1089,11 +1089,11 @@ feedtroph <- ggplot(feedT, aes(x=Site, fill=Feed, y=TrophicGroup)) +
   scale_fill_gradient(low='#EEEEEE', high='black', name='Feeding rate', limits=c(0,50)) + 
   scale_x_discrete(labels=c('CB', 'L1', 'N3', 'R', 'SE', 'TB', 'V')) + 
   labs(x='Site', y='Trophic group')
-feedtotal <- ggplot(predictors, aes(x=Site, y=FeedRate3)) +
+feedtotal <- ggplot(predictors, aes(x=Site, y=ForRate)) +
   geom_bar(stat='identity', fill='white', color='black', width=0.8) + looks + 
   scale_x_discrete(labels=c('CB', 'L1', 'N3', 'R', 'SE', 'TB', 'V')) + 
   labs(y='Feeding rate (cm-bites/min)', x='Site') +
-  scale_y_continuous(expand=expansion(mult=c(0,.02)), breaks=seq(0,max(predictors$FeedRate3), by=10))
+  scale_y_continuous(expand=expansion(mult=c(0,.02)), breaks=seq(0,max(predictors$ForRate), by=10))
 
 feed_total <- ggplot(feed, aes(x=Site, y=SpFeed)) + 
   geom_boxplot(width=0.75) + looks + 
@@ -1140,17 +1140,17 @@ boxplots <- as.list(rep(0,4))
     geom_jitter(shape=21, size=2, alpha=0.7) + looks +
     labs(title='FD indices', x='FD indices', y='Value')
   
-  boxplots[[4]] <- ggplot(SpatData, aes(x=1, y=FeedRate3)) +
+  boxplots[[4]] <- ggplot(SpatData, aes(x=1, y=ForRate)) +
     geom_boxplot(width=0.2) + 
     geom_jitter(shape=21, size=2, width=0.05, alpha=0.7) + looks +
     scale_x_continuous(limits=c(0.75,1.25)) +
-    labs(title='FeedRate3', x=NULL, y='Feed Rate 3') + theme(axis.ticks.x=element_blank(), axis.text.x=element_blank())
+    labs(title='ForRate', x=NULL, y='Feed Rate 3') + theme(axis.ticks.x=element_blank(), axis.text.x=element_blank())
 
 cleve.plots <- as.list(rep(0,5))
   cleve.plots[[1]] <- ggplot(SpatData, aes(y=1:dim(SpatData)[1], x=Spat)) +
     geom_point(shape=21, size=2) + looks +
     labs(y=NULL, x=NULL, title='Spat')
-  cleve.plots[[2]] <- ggplot(SpatData[seq(1,42,by=6),], aes(y=1:7, x=FeedRate3)) +
+  cleve.plots[[2]] <- ggplot(SpatData[seq(1,42,by=6),], aes(y=1:7, x=ForRate)) +
     geom_point(shape=21, size=2) + looks +
     labs(y=NULL, x=NULL, title='Feeding Rate')
   cleve.plots[[3]] <- ggplot(SpatData[seq(1,42,by=6),], aes(y=1:7, x=FRic)) +
@@ -1163,10 +1163,10 @@ cleve.plots <- as.list(rep(0,5))
     geom_point(shape=21, size=2) + looks +
     labs(y=NULL, x=NULL, title='FDiv')
   
-feed1 <- ggplot(SpatData, aes(x=FeedRate3)) +
+feed1 <- ggplot(SpatData, aes(x=ForRate)) +
   geom_histogram(bins=7, fill='white', color='black') + looks +
   labs(y='Frequency', x='Feeding Rate3')
-feed2 <- ggplot(SpatData, aes(x=log(FeedRate3))) +
+feed2 <- ggplot(SpatData, aes(x=log(ForRate))) +
   geom_histogram(bins=7, fill='white', color='black') + looks +
   labs(y='Frequency', x='Feeding Rate3')
   
@@ -1207,7 +1207,7 @@ ggplot(data = cor.spat %>% filter(value != 1), aes(x=var1, y=name, fill=sqrt(val
 ## ----Spat GLMM fit--------------------------------------------------------------------------------------------------------------
 str(SpatData) # check that all of the data are in the proper data types before fitting
 SpatData$Site <- as.factor(SpatData$Site) # Yep, site was not a factor
-SpatData$FeedRate3 <- as.numeric(SpatData$FeedRate3)
+SpatData$ForRate <- as.numeric(SpatData$ForRate)
 set.seed(24)
 # fit a GLMM with study site as a random effect (Poisson)
 
@@ -1217,13 +1217,13 @@ SpatModel <- as.list(c(0,0,0))
 #                    Spat ~ log(FeedRate) + FEve + FDiv + FRic + (1|Site), 
 #                    family=poisson)
 SpatModel[[1]] <- glmer(data=SpatData, 
-                   Spat ~ FeedRate3 + FEve + FDiv + FRic + (1|Site), 
+                   Spat ~ ForRate + FEve + FDiv + FRic + (1|Site), 
                    family=poisson)
 SpatModel[[2]] <- glmer(data=SpatData, 
-                   Spat ~ FeedRate3 + FEve + FDiv + FRic + HerbProp + BiterProp + (1|Site), 
+                   Spat ~ ForRate + FEve + FDiv + FRic + HerbProp + BiterProp + (1|Site), 
                    family=poisson)
 SpatModel[[3]] <- glmer(data=SpatData, 
-                   Spat ~ FeedRate3 + FDiv + HerbProp + (1|Site), 
+                   Spat ~ ForRate + FDiv + HerbProp + (1|Site), 
                    family=poisson)
 # also fit a GLMM with negative binomial because it's very likely that the data is overdispersed
 # I would prefer fitting quasipoisson, but there is no function to fit that with mixed models
@@ -1252,23 +1252,23 @@ for (i in 2:5) {
 SpatModel.nb <- as.list(c(0,0))
 
 SpatModel.nb[[1]] <- glmer.nb(data=SpatData, 
-                   Spat ~ FeedRate3 + FEve + FDiv + FRic + HerbProp + BiterProp + (1|Site))
+                   Spat ~ ForRate + FEve + FDiv + FRic + HerbProp + BiterProp + (1|Site))
 SpatModel.nb[[2]] <- glmer.nb(data=SpatData, 
-                   Spat ~ FeedRate3 + HerbProp + BiterProp + (1|Site))
+                   Spat ~ ForRate + HerbProp + BiterProp + (1|Site))
 SpatModel.nb[[3]] <- glmer.nb(data=SpatData, 
-                   Spat ~ FeedRate3 + FEve + FDiv + FRic + (1|Site))
+                   Spat ~ ForRate + FEve + FDiv + FRic + (1|Site))
 SpatModel.nb[[4]] <- glmer.nb(data=SpatData, 
-                   Spat ~ FeedRate3 + FDiv + FRic + HerbProp + (1|Site))
+                   Spat ~ ForRate + FDiv + FRic + HerbProp + (1|Site))
 SpatModel.nb[[5]] <- glmer.nb(data=SpatData, 
-                   Spat ~ FeedRate3 + FDiv + FRic + HerbProp + BiterProp + (1|Site))
+                   Spat ~ ForRate + FDiv + FRic + HerbProp + BiterProp + (1|Site))
 SpatModel.nb[[6]] <- glmer.nb(data=SpatData, 
                    Spat ~ (1|Site))
 SpatModel.nb[[7]] <- glmer.nb(data=SpatData, 
-                   Spat ~ FeedRate3 + HerbProp + (1|Site))
+                   Spat ~ ForRate + HerbProp + (1|Site))
 SpatModel.nb[[8]] <- glmer.nb(data=SpatData, 
-                   Spat ~ FeedRate3 + FEve + FDiv + FRic + BiterProp + (1|Site))
+                   Spat ~ ForRate + FEve + FDiv + FRic + BiterProp + (1|Site))
 SpatModel.nb[[9]] <- glmer.nb(data=SpatData, 
-                   Spat ~ FeedRate3 + FEve + FDiv + FRic + HerbProp + (1|Site))
+                   Spat ~ ForRate + FEve + FDiv + FRic + HerbProp + (1|Site))
 
 for (i in 1:length(SpatModel.nb)) {
   print(summary(SpatModel.nb[[i]]))
@@ -1343,7 +1343,7 @@ m=9
     'Benthic feeder abundance'
   )
   names(axis.lab) <- c(
-    'FEve', 'FRic', 'FDiv', 'FeedRate3', 'HerbProp', 'BiterProp'
+    'FEve', 'FRic', 'FDiv', 'ForRate', 'HerbProp', 'BiterProp'
   )
 
 for (i in 1:l) { # loop for partial regression plot panels
@@ -1460,11 +1460,11 @@ RecModels <- as.list(rep(0,2)) # store them all in a list object
 RecModels[[1]] <- glmer(data=RecruitData, family=poisson,
                         formula=Recruits ~ Spat2018 + (1|Site)) # null model in a way
 RecModels[[2]] <- glmer(data=RecruitData, family=poisson,
-                        formula=Recruits ~ Spat2018 + FeedRate3 + FRic + FEve + FDiv + HerbProp + (1|Site))
+                        formula=Recruits ~ Spat2018 + ForRate + FRic + FEve + FDiv + HerbProp + (1|Site))
 RecModels[[3]] <- glmer(data=RecruitData, family=poisson,
-                        formula=Recruits ~ Spat2018 + FeedRate3 + FRic + FEve + FDiv + HerbProp + BiProp + (1|Site))
+                        formula=Recruits ~ Spat2018 + ForRate + FRic + FEve + FDiv + HerbProp + BiProp + (1|Site))
 RecModels[[4]] <- glmer(data=RecruitData, family=poisson,
-                        formula=Recruits ~ Spat2018 + FeedRate3 + HerbProp + BiProp + (1|Site))
+                        formula=Recruits ~ Spat2018 + ForRate + HerbProp + BiProp + (1|Site))
 
 
 ## ----Neg binomial recruit models------------------------------------------------------------------------------------------------
@@ -1473,21 +1473,21 @@ RecModels.nb <- as.list(rep(0,0))
 RecModels.nb[[1]] <- glmer.nb(data=RecruitData,
                         formula=Recruits ~ Spat2018 + (1|Site)) # null model in a way
 RecModels.nb[[2]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + FeedRate3 + FEve + FDiv + FRic + HerbProp + BiterProp + (1|Site))
+                              Recruits ~ Spat2018 + ForRate + FEve + FDiv + FRic + HerbProp + BiterProp + (1|Site))
 RecModels.nb[[3]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + FeedRate3 + HerbProp + BiterProp + (1|Site))
+                              Recruits ~ Spat2018 + ForRate + HerbProp + BiterProp + (1|Site))
 RecModels.nb[[4]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + FeedRate3 + FEve + FDiv + FRic + (1|Site))
+                              Recruits ~ Spat2018 + ForRate + FEve + FDiv + FRic + (1|Site))
 RecModels.nb[[5]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + FeedRate3 + FDiv + FRic + HerbProp + (1|Site))
+                              Recruits ~ Spat2018 + ForRate + FDiv + FRic + HerbProp + (1|Site))
 RecModels.nb[[6]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + FeedRate3 + FDiv + FRic + HerbProp + BiterProp + (1|Site))
+                              Recruits ~ Spat2018 + ForRate + FDiv + FRic + HerbProp + BiterProp + (1|Site))
 RecModels.nb[[7]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + FeedRate3 + FDiv + HerbProp + (1|Site))
+                              Recruits ~ Spat2018 + ForRate + FDiv + HerbProp + (1|Site))
 RecModels.nb[[8]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + FeedRate3 + FEve + FDiv + FRic + BiterProp + (1|Site))
+                              Recruits ~ Spat2018 + ForRate + FEve + FDiv + FRic + BiterProp + (1|Site))
 RecModels.nb[[9]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + FeedRate3 + HerbProp + (1|Site))
+                              Recruits ~ Spat2018 + ForRate + HerbProp + (1|Site))
 RecModels.nb[[10]] <- glmer.nb(data=RecruitData,
                               formula=Recruits ~ (1|Site)) # null model 2
 
