@@ -8,12 +8,14 @@ require(patchwork)
 require(lme4)
 
 set.seed(24)
+ci.pred <- function(.) predict(., newx, type='response', re.form=NA)
 
-m=9
+m=8
 l <- length(fixef(RecModels[[m]]))-1
 par9 <- as.list(rep(0,l))
 newfit.r9 <- as.list(rep(0,l))
 conf.r9<- as.list(rep(0,l))
+bb <- as.list(rep(0,l))
 x <- RecruitData %>% ungroup() %>% mutate_if(is.numeric, mean)
 
 # loop inputting the confidence intervals separately in case something goes wrong with bootstrapping.

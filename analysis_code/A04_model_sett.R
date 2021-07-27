@@ -9,20 +9,21 @@
 #############################################################################
 
 # ForRate = trait-weighted foraging rates
-# FEve = Trait evenness
-# FDiv = Trait divergence
-# FRic = Trait richness
-# HerbProp = Relative herbivore abundance
-# BiterProp = Relative benthic biter abundance
+# TEve = Trait evenness
+# TDiv = Trait divergence
+# TOP = Trait richness
+# Herb = Relative herbivore abundance
+# Benthic = Relative benthic biter abundance
 
 require(tidyverse)
 require(lme4)
 require(performance)
+require(readxl)
 set.seed(24)
 
 settlement <- read_xlsx('./src/LIRS_settlement_2019-20.xlsx', sheet='Sheet1', col_names=T)
-head(settlement)
-str(settlement)
+# head(settlement)
+# str(settlement)
 # select just the 7 study sites and their spat data from 2019
 sett.trim <- settlement %>% group_by(year, site) %>% filter(str_detect(site, 'corner_beach|lagoon_1|resort|southeast|turtle_beach|vickies|north_reef_3'), year=='2019-20')
 # create a str_replace renaming object so that the site names are consistent with the predictors data
@@ -42,27 +43,29 @@ SpatData$ForRate <- as.numeric(SpatData$ForRate)
 SpatModel.nb <- as.list(c(0,0))
 
 SpatModel.nb[[1]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + FEve + FDiv + FRic + HerbProp + BiterProp + (1|Site))
+                              Spat ~ ForRate + TEve + TDiv + TOP + Herb + Benthic + (1|Site))
 SpatModel.nb[[2]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + HerbProp + BiterProp + (1|Site))
+                              Spat ~ ForRate + Herb + Benthic + (1|Site)) # failed to converge
 SpatModel.nb[[3]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + FEve + FDiv + FRic + (1|Site))
+                              Spat ~ ForRate + TEve + TDiv + TOP + (1|Site))
 SpatModel.nb[[4]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + FDiv + FRic + HerbProp + (1|Site))
+                              Spat ~ ForRate + TDiv + TOP + Herb + (1|Site))
 SpatModel.nb[[5]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + FDiv + FRic + HerbProp + BiterProp + (1|Site))
+                              Spat ~ ForRate + TDiv + TOP + Herb + Benthic + (1|Site))
 SpatModel.nb[[6]] <- glmer.nb(data=SpatData, 
                               Spat ~ (1|Site))
 SpatModel.nb[[7]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + HerbProp + (1|Site))
+                              Spat ~ ForRate + Herb + (1|Site))
 SpatModel.nb[[8]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + FEve + FDiv + FRic + BiterProp + (1|Site))
+                              Spat ~ ForRate + TEve + TDiv + TOP + Benthic + (1|Site))
 SpatModel.nb[[9]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + FEve + FDiv + FRic + HerbProp + (1|Site))
+                              Spat ~ ForRate + TEve + TDiv + TOP + Herb + (1|Site))
 
 for (i in 1:length(SpatModel.nb)) {
   print(summary(SpatModel.nb[[i]]))
 }
+
+SpatModel.nb <- SpatModel.nb[-2]
 
 ## ----Model comparison summary---------------------------------------------------------------------------------------------------
 mod.summ <- data.frame(Model=1:length(SpatModel.nb))
@@ -72,14 +75,11 @@ for (i in 1:length(SpatModel.nb)) {
   mod.summ$dev[i] <- round(summary(SpatModel.nb[[i]])$AIC[4], 2)
   mod.summ$Singularities[i] <- isSingular(SpatModel.nb[[i]])
   mod.summ$Dispersion[i] <- round(summary(SpatModel.nb[[i]])$AIC[4]/df.residual(SpatModel.nb[[i]]), 2)
-  mod.summ$mR2[i] <- as.numeric(r2(SpatModel.nb[[i]])[2])
+  mod.summ$mR2[i] <- as.numeric(r2(SpatModel.nb[[i]])[2]) %>% round(.,3)
 }
 mod.summ <- mod.summ %>% arrange(AICc)
 mod.summ$wAIC <- round(MuMIn::Weights(mod.summ$AICc), 3)
-mod.summ$dAIC <- rep(0, length(SpatModel.nb))
-for (i in 2:length(SpatModel.nb)) {
-  mod.summ$dAIC[i] <- with(mod.summ, AICc[i]-AICc[i-1])
-}
+mod.summ$dAIC <- mod.summ$AICc-mod.summ$AICc[1] %>% round(., 3)
 rownames(mod.summ) <- mod.summ$Model
 print(mod.summ)
 

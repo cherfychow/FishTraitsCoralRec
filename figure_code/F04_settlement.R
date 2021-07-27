@@ -30,12 +30,10 @@ for (i in 1:l) { # each predictor term
 }
 
 axis.lab <- c(
-  'Trait evenness',
-  'Trait richness',
-  'Trait divergence',
   'Foraging rate (cm-bites/min)',
-  'Herbivore abundance',
-  'Benthic forager abundance'
+  'TDiv',
+  'TOP index',
+  'Herbivore abundance'
 )
 names(axis.lab) <- names(fixef(SpatModel.nb[[m]])[-1])
 sites <- c('Corner Beach', 'Lagoon', 'North Reef', 'Resort', 'Southeast', 'Turtle Beach', "Vicki's")
