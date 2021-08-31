@@ -68,20 +68,20 @@ for (i in 1:length(SpatModel.nb)) {
 SpatModel.nb <- SpatModel.nb[-2]
 
 ## ----Model comparison summary---------------------------------------------------------------------------------------------------
-mod.summ <- data.frame(Model=1:length(SpatModel.nb))
+sett.summ <- data.frame(Model=1:length(SpatModel.nb))
 for (i in 1:length(SpatModel.nb)) {
-  mod.summ$nTerms[i] <- length(rownames(summary(SpatModel.nb[[i]])$coefficients))-1
-  mod.summ$AICc[i] <- round(MuMIn::AICc(SpatModel.nb[[i]]), 2)
-  mod.summ$dev[i] <- round(summary(SpatModel.nb[[i]])$AIC[4], 2)
-  mod.summ$Singularities[i] <- isSingular(SpatModel.nb[[i]])
-  mod.summ$Dispersion[i] <- round(summary(SpatModel.nb[[i]])$AIC[4]/df.residual(SpatModel.nb[[i]]), 2)
-  mod.summ$mR2[i] <- as.numeric(r2(SpatModel.nb[[i]])[2]) %>% round(.,3)
+  sett.summ$nTerms[i] <- length(rownames(summary(SpatModel.nb[[i]])$coefficients))-1
+  sett.summ$AICc[i] <- round(MuMIn::AICc(SpatModel.nb[[i]]), 2)
+  sett.summ$BIC[i] <- round(BIC(SpatModel.nb[[i]]), 2)
+  sett.summ$dev[i] <- round(summary(SpatModel.nb[[i]])$AIC[4], 2)
+  sett.summ$Dispersion[i] <- round(summary(SpatModel.nb[[i]])$AIC[4]/df.residual(SpatModel.nb[[i]]), 2)
 }
-mod.summ <- mod.summ %>% arrange(AICc)
-mod.summ$wAIC <- round(MuMIn::Weights(mod.summ$AICc), 3)
-mod.summ$dAIC <- mod.summ$AICc-mod.summ$AICc[1] %>% round(., 3)
-rownames(mod.summ) <- mod.summ$Model
-print(mod.summ)
+sett.summ <- sett.summ %>% arrange(AICc, BIC)
+sett.summ$wAIC <- round(MuMIn::Weights(sett.summ$AICc), 3)
+sett.summ$dAIC <- sett.summ$AICc-sett.summ$AICc[1] %>% round(., 3)
+sett.summ$dBIC <- sett.summ$BIC-sett.summ$BIC[1] %>% round(., 3)
+rownames(sett.summ) <- sett.summ$Model
+print(sett.summ)
 
 i=4
 model_performance(SpatModel.nb[[i]])

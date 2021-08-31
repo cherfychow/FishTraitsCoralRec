@@ -93,13 +93,15 @@ rec.summ <- data.frame(Model=c(1:8))
 for (i in 1:8) {
   rec.summ$nTerms[i] <- length(rownames(summary(RecModels[[i]])$coefficients))-1
   rec.summ$AICc[i] <- round(MuMIn::AICc(RecModels[[i]]), 2)
-  rec.summ$mR2[i] <- round(as.numeric(r2(RecModels[[i]])[2]),3)
+  rec.summ$BIC[i] <- round(BIC(RecModels[[i]]), 2)
+  rec.summ$dev[i] <- round(summary(RecModels[[i]])$AIC[4], 2)
   rec.summ$Dispersion[i] <- round(deviance(RecModels[[i]])/summary(RecModels[[i]])$AIC[5], 2)
 }
-rec.summ <- rec.summ %>% arrange(AICc)
+rec.summ <- rec.summ %>% arrange(AICc, BIC)
 rownames(rec.summ) <- rec.summ$Model
 rec.summ$wAIC <- round(MuMIn::Weights(rec.summ$AICc), 3)
 rec.summ$dAIC <- rec.summ$AICc - rec.summ$AICc[1] %>% round(., 3)
+rec.summ$dBIC <- rec.summ$BIC - rec.summ$BIC[1] %>% round(., 3)
 
 rec.summ
 
