@@ -17,55 +17,42 @@ looks <- theme_bw(base_size=13) + theme(panel.grid=element_blank(), axis.ticks=e
 # working directory is repo home
 set.seed(24) # repeatability :)
 
+# load data
+traits <- read.csv('src/fish_traits.csv', header=T, row.names = 1)
+# we can't run trait analysis on uncertain species IDs
+fish_assemblage <- read.csv('src/fish_assemblage.csv', header=T) %>% filter(!str_detect(Species, ' sp$'))
+fish_sp <- read.csv('src/fish_sptaxonomy.csv', header=T)
+
 # Pairwise trait check, just so they're not directly colinear
 # pairs(traits[,-1], labels=colnames(traits)[-1], col=rgb(0.2,0.2,0.2, 0.5))
 
-
-## Trait space ------------------------------------------------------------------------------------------------------------
+## Trait space set up ------------------------------------------------------------------------------------------------------------
 
 # create the abundance matrix for functional evenness and divergence weighting
 # species are columns, each site + total = rows
-abund <- Sp.count %>% filter(str_detect(SpeciesV, ' sp$', negate=T)) %>% select(SpeciesV, n) %>% spread(SpeciesV, n) # row 1 = all sites
+abund <- fish_sp %>% filter(!str_detect(Species, ' sp$')) %>% select(Species, n) %>% spread(Species, n) # row 1 = all sites
 abund$Site <- 'All'
-abund <- rbind(UBRUVspecies %>% select(Site, Species, n) %>% spread(Species, n), abund)
+abund <- rbind(fish_assemblage %>% filter(!str_detect(Species, ' sp$')) %>% select(Site, Species, n) %>% spread(Species, n), abund)
 # because not all species occur in each site, there are lots of NAs to be filled with 0s
 NAlist <- as.list(rep('0',dim(abund)[2]-1)) # list has to have column names for every item = 0
 names(NAlist) <- colnames(abund)[2:ncol(abund)]
 abund <- abund %>% replace_na(NAlist) # annnd replace NAs
-rownames(traits) <- traits$Species # dbFD function requires species in the row names
 
 # abundance data frame is in characters????
-abund <- abund %>% mutate(across(where(is.character), as.numeric))
-abund <- as.data.frame(abund)
 rownames(abund) <- abund$Site
 abund$Site <- NULL
+abund <- abund %>% mutate(across(where(is.character), as.numeric)) %>% as.data.frame()
 rm(NAlist)
 
-## ----Trait space sites, results='hide'------------------------------------------------------------------------------------------
-# running the full lizard island traits together is very computationally taxing
-# so I'll split all the sites to run the FD package separately
-abun <- as.list(rep('0',7))
-for (i in 1:7) {
-  abun[[i]] <- as.data.frame(UBRUV %>% filter(Site == unique(UBRUV$Site)[i]) %>% ungroup() %>% select(Species, n) %>% spread(Species, n))
-}
-names(abun) <- unique(UBRUV$Site)
-names(Sp.count)[1] <- 'Species'
-names(Sp.countL)[1] <- 'Species'
-abun[[8]] <- Sp.count %>% filter(str_detect(Species, ' sp$', negate=T)) %>% select(Species, n) %>% spread(Species, n)
-names(abun)[8] <- 'all' # add one item for all sites
 
-trait.dis <- cailliez(gowdis(traits[,-1], ord='podani'))
-is.euclid(trait.dis) # check whether distances are Euclidean before running PCoA
-
-# run PCoA
-# pcoa <-  pcoa(trait.dis, rn=colnames(trait.dis)) #PCoA with Cailliez corrections to negative eigenvalues
-# this is primarily so we have a PCoA object for checking. FD package wraps pcoa internally in the function
-
-## ----FD calculation-------------------------------------------------------------------------------------------------------------
+# Trait space + diversity metrics -------------------------------------------------
 
 # calculate FD indices for each site with respect to the global functional trait space
 # because this is with respect to all study sites, sites are comparable
-# except for TRichness because we're using an alternative calculation
+# not calculating TRichness because we're using an alternative calculation
+trait.dis <- cailliez(gowdis(traits[,-1], ord='podani'))
+is.euclid(trait.dis) # check whether distances are Euclidean before running PCoA
+
 FD_global <- dbFD(trait.dis, abund, w.abun=T, calc.FRic=T, calc.FDiv=T, m=4, calc.CWM=F, calc.FGR=F, print.pco=T)
 point <- as.data.frame(FD_global$x.axes)[,1:4] # create a data frame of each species position in the 4D trait space
 point$Species <- rownames(traits)
@@ -84,7 +71,7 @@ s.point <- as.list(rep(0,7))
 predictors$TOP <- rep(0, 7)
 for (i in 1:7) {
   # first, make a dummy points dataframe only with the species in that site
-  s.point[[i]] <- UBRUVspecies %>% filter(Site == unique(UBRUVspecies$Site)[i]) %>% ungroup() %>% select(Species)
+  s.point[[i]] <- fish_assemblage %>% filter(Site == unique(Site)[i]) %>% ungroup() %>% select(Species)
   s.point[[i]] <- left_join(s.point[[i]], point, by='Species')# use the point df to match the positions from the PCoA
   predictors$TOP[i] <- TOP.index(s.point[[i]][-1])[2] # calculate the TOP index
 }
@@ -98,14 +85,14 @@ site.total <- data.frame(site.total=rowSums(abund), Site=rownames(abund))
 # also make separate trait tables for each site
 traits.sites <- as.list(rep('0', 7))
 for (i in 1:7) {
-  site.sp <- UBRUV %>% filter(Site == unique(UBRUV$Site)[i]) %>% ungroup() %>% select(Species)
+  site.sp <- fish_assemblage %>% filter(Site == unique(fish_assemblage$Site)[i]) %>% ungroup() %>% select(Species)
   # filter the tibble by each site and extract the species
   traits.sites[[i]] <- as.data.frame(left_join(site.sp, as_tibble(traits), by='Species'))
   # Use the site specific species list to match with the traits
   rownames(traits.sites[[i]]) <- traits.sites[[i]]$Species # row names bc FD requires it
   traits.sites[[i]][,1] <- NULL # Remove the Species column now that things are joined
 }
-names(traits.sites) <- unique(UBRUV$Site) # name list items by site
+names(traits.sites) <- unique(fish_assemblage$Site) # name list items by site
 rm(site.sp)
 traits.sites[[8]] <- traits[,-1]
 names(traits.sites)[8] <- 'all' # all sites again
@@ -117,7 +104,7 @@ for (i in 1:7) {
   herb$Species <- rownames(herb)
   herb <-  herb %>% filter(TrophicGroup=='herbivore') %>% ungroup() %>% select(Species)
   herb$Site <- names(traits.sites)[i]
-  herb <- left_join(herb, UBRUVspecies, by=c('Site', 'Species')) %>% ungroup() %>% select(Site, Species, n)
+  herb <- left_join(herb, fish_assemblage, by=c('Site', 'Species')) %>% ungroup() %>% select(Site, Species, n)
   site.herb$Herb[i] <- sum(herb$n)/site.total$site.total[i]
 }
 
@@ -129,7 +116,7 @@ for (i in 1:7) {
   biter <-  biter %>% filter(ColumnFeed == 'benthic') %>% 
     filter(str_detect(TrophicGroup, 'detritovore|invertivore|omnivore')) %>% ungroup() %>% select(Species)
   biter$Site <- names(traits.sites)[i]
-  biter <- left_join(biter, UBRUVspecies, by=c('Site', 'Species')) %>% ungroup() %>% select(Site, Species, n)
+  biter <- left_join(biter, fish_assemblage, by=c('Site', 'Species')) %>% ungroup() %>% select(Site, Species, n)
   site.biter$Benthic[i] <- sum(biter$n)/site.total$site.total[i]
 }
 # add it to our predictors dataframe

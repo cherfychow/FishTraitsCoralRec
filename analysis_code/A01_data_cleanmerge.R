@@ -83,8 +83,7 @@ ubruv.validated$Length <- str_replace_all(ubruv.validated$Length, length.convert
 detach(package:worms)
 detach(package:plyr)
 # and now from ubruv.trim > ubruv.validated after name checks
-rm(ubruv.trim)
-rm(invalid)
+rm(ubruv.trim, invalid, validate, corrections, Sp)
 
 
 ## ----species summary------------------------------------------------------------------------------------------------------------
@@ -94,22 +93,15 @@ Sp.list <- Sp.list %>% select(valid_name, family) %>% mutate(genus=word(valid_na
 Sp.count <- as_tibble(ubruv.validated) %>% 
   group_by(SpeciesV) %>% summarise(n=sum(Count)) %>% 
   filter(str_detect(SpeciesV, ' sp$', negate=T))# counts per species
-
-Sp.countL <- as_tibble(ubruv.validated) %>% 
-  group_by(SpeciesV, Length) %>% summarise(n=sum(Count)) # counts per species and length class
+names(Sp.count)[1] = "Species"
 
 site.n <- ubruv.validated %>% group_by(Site) %>% summarise(n=sum(Count)) # total number of fish per site
 
 UBRUVspecies <- ubruv.validated %>% group_by(Site, SpeciesV) %>% summarise(n=sum(Count)) # counts per species grouped by site
-UBRUVspeciesL <- ubruv.validated %>% group_by(Site, SpeciesV, Length) %>% summarise(n=sum(Count))
-# make a separate tibble for grouping by length classes
 
+colnames(Sp.list)[1] <- "Species" #rename the Species column in the worms dataframe
 
-colnames(Sp.list)[1] <- "SpeciesV" #rename the Species column in the worms dataframe
-UBRUVspecies$genus <- word(UBRUVspecies$SpeciesV, 1) # extract genus names to make join easier
-UBRUVspecies <- left_join(UBRUVspecies, distinct(Sp.list[,2:3]), by='genus') # add a column of family names to UBRUV datasheet
-
-Sp.count$genus <- word(Sp.count$SpeciesV, 1) # add genus column to the species count summary tibble
+Sp.count$genus <- word(Sp.count$Species, 1) # add genus column to the species count summary tibble
 Sp.count <- left_join(Sp.count, distinct(Sp.list[,2:3]), by='genus') # and add family taxonomic info too
 
 ## Validate names for bite data------------------------------------------------------------------------
@@ -163,27 +155,6 @@ length.convert <- c('2.5', '2.5', '15', '25', '7.5') # in order as shown by sort
 names(length.convert) <- paste0('^', sort(unique(bite.validated$Length)), '$')
 bite.validated$LengthM <- str_replace_all(bite.validated$Length, length.convert) # length classes to mid point values
 
-# join that all up grouped by site and species
-# (this group of data wrangling is NOT BY LENGTH CATEGORIES)
-UBRUVbite <- bite.validated %>% group_by(Site, Species) %>% summarise(BiteTotal=sum(BiTotal), DurationTotal=sum(Duration)) %>% filter(BiteTotal > 0) # only those that bite
-UBRUVbite$BiteRate <- with(UBRUVbite, (BiteTotal/DurationTotal)*60) # bites per minute rate
-head(UBRUVbite, n=10)
-
-# join the species and bite rate data
-# (NOT CLASSIFIED BY LENGTH)
-colnames(UBRUVspecies)[2] = 'Species' # column name align for joining
-UBRUV <- full_join(UBRUVspecies, UBRUVbite, by=c('Site', 'Species')) # join it according to site and species
-UBRUV$BiteRateAbund <- with(UBRUV, BiteRate/n) # bites per min per individual
-UBRUV <- UBRUV %>% replace_na(list(BiteTotal=0, DurationTotal=0, BiteRate=0, BiteRateAbund=0)) # create a bite per second metric for each species
-
-# remove the genus level IDs
-UBRUV <- UBRUV %>% filter(str_detect(Species, ' sp$', negate=T))
-UBRUVspecies <- UBRUVspecies %>% filter(str_detect(Species, ' sp$', negate=T))
-UBRUV <- UBRUV %>% filter(str_detect(Species, ' sp$', negate=T))
-head(UBRUV, n=10)
-# now that we have the counts per species, we can standardise bite rate per individual
-
-
 ## Bite + Species data with Length-------------------------------------------------------------------------------------------
 
 # a separate tibble for bites grouped by LENGTH, species, and site.
@@ -196,42 +167,3 @@ length.convert <- c('2.5', '2.5', '15', '25', '7.5') # in order as shown by sort
 names(length.convert) <- paste('^', sort(unique(UBRUVbiteL$Length)), '$', sep='')
 UBRUVbiteL$Length <- str_replace_all(UBRUVbiteL$Length, length.convert)
 
-# and join like we did before
-colnames(UBRUVspeciesL)[2] = 'Species' # change column name to make sure things line up in joining
-UBRUV.L <- full_join(UBRUVspeciesL, UBRUVbiteL, by=c('Site', 'Species', 'Length')) # join it according to site and species
-UBRUV.L$BiteRateAbund <- with(UBRUV.L, BiteRate/Bitemaxn) # bites per min per individual
-UBRUV.L <- UBRUV.L %>% replace_na(list(BiteTotal=0, DurationTotal=0, BiteRate=0, BiteRateAbund=0)) # create a bite per second metric for each species
-head(UBRUV.L, n=10)
-
-# for UBRUV.L
-length.convert <- c('10-20', '< 5', '20-30', '30-40', '40-50', '50-60', '5-10', '80-90')
-# in order as shown by sort(unique(UBRUV.L$Length))
-names(length.convert) <- paste('^', sort(unique(UBRUV.L$Length)), '$', sep='')
-UBRUV.L$LengthC <- str_replace_all(UBRUV.L$Length, length.convert)
-
-
-## Summaries-------------------------------------------------------------------------------------------------------
-str(UBRUV)
-summary(UBRUV)
-
-str(UBRUV.L)
-summary(UBRUV.L)
-
-
-# reimport trait data after supplementing the trait data manually and assemble into table
-trait.data <- read_csv('./src/trait_manual.csv', col_names=T) # overwrite trait.data with the manual table
-# active range and schooling behaviour values
-trait.range <- read_csv('./src/trait_range_CC.csv', col_names=T)
-
-# merge them, clean up a little. not a whole lot is needed though.
-traits <- trait.data %>% select(-Source) %>% left_join(.,trait.range[,4:6], by='Species')
-head(traits)
-# make sure R reads trait data types properly
-traits <- as.data.frame(traits)
-str(traits)
-traits[,-1] <- traits[,-1] %>% mutate(across(where(is.character), as.factor)) # turn characters into factors
-traits$Schooling <- as.ordered(traits$Schooling)
-traits$Range <- as.ordered(traits$Range)
-str(traits) # confirm!
-
-rm(list=c('invalid', 'validate', 'BiteSp', 'length.convert', 'trait.data', 'trait.range')) # clear some objects up
