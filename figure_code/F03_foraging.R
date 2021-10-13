@@ -11,6 +11,16 @@ require(tidyverse)
 require(patchwork)
 require(viridis)
 
+# foraging rates by foraging mode
+feed <- left_join(ForRate, sp.inf, by='Species') %>% mutate(SpFeed=0.01*SpInf*sumLBi) %>% 
+  left_join(., traits %>% select(Species, TrophicGroup, ForageMode), by="Species")
+feedF <- feed %>% group_by(Site,TrophicGroup, ForageMode) %>% summarise(Feed=sum(SpFeed), Infl=mean(SpInf))
+feedF$ForageMode <- factor(feedF$ForageMode, levels=feedF %>% ungroup() %>% arrange(Infl) %>% distinct(ForageMode) %>% pull)
+
+# foraging rates by trophic group
+feedT <- feed %>% group_by(Site,TrophicGroup) %>% summarise(Feed=sum(SpFeed), Infl=mean(SpInf))
+feedT$TrophicGroup <- factor(feedT$TrophicGroup, levels=feedT %>% ungroup() %>% arrange(Infl) %>% distinct(TrophicGroup) %>% pull)
+
 feedforage <- ggplot(feedF, aes(x=Site, fill=Feed, y=ForageMode)) +
   geom_tile() + looks + 
   scale_fill_gradient(low='#EEEEEE', high='black', name=NULL) + 

@@ -100,9 +100,14 @@ site.n <- ubruv.validated %>% group_by(Site) %>% summarise(n=sum(Count)) # total
 UBRUVspecies <- ubruv.validated %>% group_by(Site, SpeciesV) %>% summarise(n=sum(Count)) # counts per species grouped by site
 
 colnames(Sp.list)[1] <- "Species" #rename the Species column in the worms dataframe
+colnames(UBRUVspecies)[2] <- "Species" #rename the Species column in the worms dataframe
 
 Sp.count$genus <- word(Sp.count$Species, 1) # add genus column to the species count summary tibble
 Sp.count <- left_join(Sp.count, distinct(Sp.list[,2:3]), by='genus') # and add family taxonomic info too
+
+# uncomment to save
+# write.csv(Sp.count[c(4,3,1,2)], 'src/fish_sptaxonomy.csv')
+# write.csv(UBRUVspecies, 'src/fish_assemblage.csv')
 
 ## Validate names for bite data------------------------------------------------------------------------
 
@@ -146,24 +151,15 @@ bite.validated$Duration <- with(bite.validated, as.numeric(as.duration(BiEnd)-as
 head(bite.validated)
 # calculate duration of occurrences/bites and add as new column
 
-
-## ----Bite + Sp combine (without lengths)----------------------------------------------------------------------------------------------------------
 # clean up the length categories
 bite.validated$Length <- str_replace_all(bite.validated$Length, ' 10_20$', '10_20')
-sort(unique(bite.validated$Length))
-length.convert <- c('2.5', '2.5', '15', '25', '7.5') # in order as shown by sort(unique(bite.validated$Length))
-names(length.convert) <- paste0('^', sort(unique(bite.validated$Length)), '$')
-bite.validated$LengthM <- str_replace_all(bite.validated$Length, length.convert) # length classes to mid point values
+bite.validated$Length <- str_replace_all(bite.validated$Length, '0_5$', '_5')
 
-## Bite + Species data with Length-------------------------------------------------------------------------------------------
-
-# a separate tibble for bites grouped by LENGTH, species, and site.
-UBRUVbiteL <- bite.validated %>% group_by(Site, Species, Length) %>% summarise(BiteTotal=sum(BiTotal), DurationTotal=sum(Duration), Bitemaxn=max(nInd)) %>% filter(BiteTotal > 0) # only those that bite
+# # a separate tibble for bites grouped by LENGTH, species, and site.
+UBRUVbiteL <- bite.validated %>% group_by(Site, Species, Length) %>% summarise(BiteTotal=sum(BiTotal), DurationTotal=sum(Duration), Bitemaxn=max(nInd)) %>% filter(BiteTotal > 0) # only keep observations of species that bite
 UBRUVbiteL$BiteRate <- with(UBRUVbiteL, (BiteTotal/DurationTotal)*60) # bites per minute
 head(UBRUVbiteL)
 
-# make a column for length classifications that's for treating length as discrete scales
-length.convert <- c('2.5', '2.5', '15', '25', '7.5') # in order as shown by sort(unique(UBRUVbiteL$Length))
-names(length.convert) <- paste('^', sort(unique(UBRUVbiteL$Length)), '$', sep='')
-UBRUVbiteL$Length <- str_replace_all(UBRUVbiteL$Length, length.convert)
+# uncomment to save
+# write.csv(UBRUVbiteL, 'src/fish_bites.csv', row.names=F, col.names=T)
 

@@ -1,15 +1,14 @@
 
 # Execution script for all analysis and figure generation components
 # Author: Cher Chow
-# Last version check: 31 Aug 2021
+# Last version check: 13 Oct 2021
 
 
 # Analysis ----------------------------------------------------------------
 
-source('./analysis_code/A01_data_cleanmerge.R') # sets up data tables
-source('./analysis_code/A02_traitspace.R') # construct trait spaces for each site
+source('./analysis_code/A01_traitspace.R') # construct trait spaces for each site
 # also calculates trait diversity predictors for models
-source('./analysis_code/A03_foragingrates.R') # processing of weighted foraging rates
+source('./analysis_code/A03_foragingrates.R') # processing of weighted foraging rate predictors
 source('./analysis_code/A04_model_sett.R') # settlement model constructions + selection
 source('./analysis_code/A05_model_rec.R') # recruitment model constructions + selection
 

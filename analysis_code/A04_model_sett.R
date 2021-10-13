@@ -21,18 +21,18 @@ require(performance)
 require(readxl)
 set.seed(24)
 
-settlement <- read_xlsx('./src/LIRS_settlement_2019-20.xlsx', sheet='Sheet1', col_names=T)
+settlement <- read_xlsx('./src/coral_settlement.xlsx', sheet='Sheet1', col_names=T)
 # head(settlement)
 # str(settlement)
 # select just the 7 study sites and their spat data from 2019
-sett.trim <- settlement %>% group_by(year, site) %>% filter(str_detect(site, 'corner_beach|lagoon_1|resort|southeast|turtle_beach|vickies|north_reef_3'), year=='2019-20')
+settlement <- settlement %>% group_by(year, site) %>% filter(str_detect(site, 'corner_beach|lagoon_1|resort|southeast|turtle_beach|vickies|north_reef_3'), year=='2019-20')
 # create a str_replace renaming object so that the site names are consistent with the predictors data
 site.rename <- sort(predictors$Site)
-names(site.rename) <- sort(unique(sett.trim$site))
-sett.trim$site <- str_replace_all(sett.trim$site, site.rename) # replace
+names(site.rename) <- sort(unique(settlement$site))
+settlement$site <- str_replace_all(settlement$site, site.rename) # replace
 
 # now consolidate it so that every row is one settlement tile
-settlement <- sett.trim %>% group_by(site, tile_number) %>% summarise(Spat=sum(total))
+settlement <- settlement %>% group_by(site, tile_number) %>% summarise(Spat=sum(total))
 colnames(settlement)[1] <- 'Site'
 SpatData <- full_join(settlement, predictors, by='Site') %>% select(-tile_number) %>% as.data.frame()
 
@@ -40,59 +40,59 @@ str(SpatData) # check that all of the data are in the proper data types before f
 SpatData$Site <- as.factor(SpatData$Site) # Yep, site was not a factor
 SpatData$ForRate <- as.numeric(SpatData$ForRate)
 
-SpatModel.nb <- as.list(c(0,0))
+Model.Sett <- as.list(c(0,0))
 
-SpatModel.nb[[1]] <- glmer.nb(data=SpatData, 
+Model.Sett[[1]] <- glmer.nb(data=SpatData, 
                               Spat ~ ForRate + TEve + TDiv + TOP + Herb + Benthic + (1|Site))
-SpatModel.nb[[2]] <- glmer.nb(data=SpatData, 
+Model.Sett[[2]] <- glmer.nb(data=SpatData, 
                               Spat ~ ForRate + Herb + Benthic + (1|Site)) # failed to converge
-SpatModel.nb[[3]] <- glmer.nb(data=SpatData, 
+Model.Sett[[3]] <- glmer.nb(data=SpatData, 
                               Spat ~ ForRate + TEve + TDiv + TOP + (1|Site))
-SpatModel.nb[[4]] <- glmer.nb(data=SpatData, 
+Model.Sett[[4]] <- glmer.nb(data=SpatData, 
                               Spat ~ ForRate + TDiv + TOP + Herb + (1|Site))
-SpatModel.nb[[5]] <- glmer.nb(data=SpatData, 
+Model.Sett[[5]] <- glmer.nb(data=SpatData, 
                               Spat ~ ForRate + TDiv + TOP + Herb + Benthic + (1|Site))
-SpatModel.nb[[6]] <- glmer.nb(data=SpatData, 
+Model.Sett[[6]] <- glmer.nb(data=SpatData, 
                               Spat ~ (1|Site))
-SpatModel.nb[[7]] <- glmer.nb(data=SpatData, 
+Model.Sett[[7]] <- glmer.nb(data=SpatData, 
                               Spat ~ ForRate + Herb + (1|Site))
-SpatModel.nb[[8]] <- glmer.nb(data=SpatData, 
+Model.Sett[[8]] <- glmer.nb(data=SpatData, 
                               Spat ~ ForRate + TEve + TDiv + TOP + Benthic + (1|Site))
-SpatModel.nb[[9]] <- glmer.nb(data=SpatData, 
+Model.Sett[[9]] <- glmer.nb(data=SpatData, 
                               Spat ~ ForRate + TEve + TDiv + TOP + Herb + (1|Site))
 
-for (i in 1:length(SpatModel.nb)) {
-  print(summary(SpatModel.nb[[i]]))
+for (i in 1:length(Model.Sett)) {
+  print(summary(Model.Sett[[i]]))
 }
 
-SpatModel.nb <- SpatModel.nb[-2]
+Model.Sett <- Model.Sett[-2]
 
-## ----Model comparison summary---------------------------------------------------------------------------------------------------
-sett.summ <- data.frame(Model=1:length(SpatModel.nb))
-for (i in 1:length(SpatModel.nb)) {
-  sett.summ$nTerms[i] <- length(rownames(summary(SpatModel.nb[[i]])$coefficients))-1
-  sett.summ$AICc[i] <- round(MuMIn::AICc(SpatModel.nb[[i]]), 2)
-  sett.summ$BIC[i] <- round(BIC(SpatModel.nb[[i]]), 2)
-  sett.summ$dev[i] <- round(summary(SpatModel.nb[[i]])$AIC[4], 2)
-  sett.summ$Dispersion[i] <- round(summary(SpatModel.nb[[i]])$AIC[4]/df.residual(SpatModel.nb[[i]]), 2)
+## Model comparison summary
+summary.sett <- data.frame(Model=1:length(Model.Sett))
+for (i in 1:length(Model.Sett)) {
+  summary.sett$nTerms[i] <- length(rownames(summary(Model.Sett[[i]])$coefficients))-1
+  summary.sett$AICc[i] <- round(MuMIn::AICc(Model.Sett[[i]]), 2)
+  summary.sett$BIC[i] <- round(BIC(Model.Sett[[i]]), 2)
+  summary.sett$dev[i] <- round(summary(Model.Sett[[i]])$AIC[4], 2)
+  summary.sett$Dispersion[i] <- round(summary(Model.Sett[[i]])$AIC[4]/df.residual(Model.Sett[[i]]), 2)
 }
-sett.summ <- sett.summ %>% arrange(AICc, BIC)
-sett.summ$wAIC <- round(MuMIn::Weights(sett.summ$AICc), 3)
-sett.summ$dAIC <- sett.summ$AICc-sett.summ$AICc[1] %>% round(., 3)
-sett.summ$dBIC <- sett.summ$BIC-sett.summ$BIC[1] %>% round(., 3)
-rownames(sett.summ) <- sett.summ$Model
-print(sett.summ)
+summary.sett <- summary.sett %>% arrange(AICc, BIC)
+summary.sett$wAIC <- round(MuMIn::Weights(summary.sett$AICc), 3)
+summary.sett$dAIC <- summary.sett$AICc-summary.sett$AICc[1] %>% round(., 3)
+summary.sett$dBIC <- summary.sett$BIC-summary.sett$BIC[1] %>% round(., 3)
+rownames(summary.sett) <- summary.sett$Model
+print(summary.sett)
 
 i=4
-model_performance(SpatModel.nb[[i]])
+model_performance(Model.Sett[[i]])
 # diagnostic plots
-print(check_model(SpatModel.nb[[i]]))
+print(check_model(Model.Sett[[i]]))
 # overdispersion check
 # QQ plot
 par(mfrow=c(1,2))
-plot(predict(SpatModel.nb[[i]], type='link', re.form=NA), residuals(SpatModel.nb[[i]], type='deviance'), xlab='Predicted', ylab='Deviance')
+plot(predict(Model.Sett[[i]], type='link', re.form=NA), residuals(Model.Sett[[i]], type='deviance'), xlab='Predicted', ylab='Deviance')
 abline(h=0, lty=2)
-qqnorm(residuals(SpatModel.nb[[i]], type='deviance'))
-qqline(residuals(SpatModel.nb[[i]], type='deviance'))
+qqnorm(residuals(Model.Sett[[i]], type='deviance'))
+qqline(residuals(Model.Sett[[i]], type='deviance'))
 par(mfrow=c(1,1))
 

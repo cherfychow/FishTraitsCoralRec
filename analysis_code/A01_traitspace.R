@@ -11,9 +11,6 @@
 require(tidyverse)
 require(FD) # calculate dissimilarity matrices + functional diversity indices
 
-# plot aesthetics
-looks <- theme_bw(base_size=13) + theme(panel.grid=element_blank(), axis.ticks=element_line(size=0.3))
-
 # working directory is repo home
 set.seed(24) # repeatability :)
 
@@ -29,8 +26,11 @@ fish_sp <- read.csv('src/fish_sptaxonomy.csv', header=T)
 ## Trait space set up ------------------------------------------------------------------------------------------------------------
 
 # create the abundance matrix for functional evenness and divergence weighting
-# species are columns, each site + total = rows
-abund <- fish_sp %>% filter(!str_detect(Species, ' sp$')) %>% select(Species, n) %>% spread(Species, n) # row 1 = all sites
+# species are columns, each site is a row
+# long format to wide
+abund <- fish_sp %>% filter(!str_detect(Species, ' sp$')) %>% 
+  select(Species, n) %>% 
+  pivot_wider(names_from = Species, values_from = n) # row 1 = all sites
 abund$Site <- 'All'
 abund <- rbind(fish_assemblage %>% filter(!str_detect(Species, ' sp$')) %>% select(Site, Species, n) %>% spread(Species, n), abund)
 # because not all species occur in each site, there are lots of NAs to be filled with 0s
@@ -79,6 +79,12 @@ for (i in 1:7) {
 # now we have to standardise this by the global trait space TOP
 predictors$TOP <- predictors$TOP/TOP.index(point[1:4])[2]
 
+# the TOP index function generates a vert.txt file but we don't need that anymore
+if (file.exists('vert.txt')) {
+  #Delete file if it exists
+  invisible(file.remove('vert.txt'))
+}
+
 # Calculate relative abundances herbivore biters --------------------------
 
 site.total <- data.frame(site.total=rowSums(abund), Site=rownames(abund))
@@ -123,3 +129,5 @@ for (i in 1:7) {
 predictors$Herb <- site.herb$Herb
 predictors$Benthic <- site.biter$Benthic
 
+# clean up objects that aren't dependencies for downstream sourcing
+rm(herb, biter, site.biter, site.herb, traits.sites, abund)
