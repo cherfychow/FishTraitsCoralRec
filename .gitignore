@@ -1,6 +1,7 @@
 # Mac auxiliary files
 .DS_Store
 *._*
+Icon?
 
 # ignore code outputs
 /figures/
