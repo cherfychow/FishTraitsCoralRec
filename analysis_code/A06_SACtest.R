@@ -97,25 +97,21 @@ for (i in 1:10) { print(SAC$NSpecies[site.index[[i]][length(site.index[[i]])]] =
 require(nlstools)
 set.seed(24)
 SAC$TElapsed <- as.numeric(SAC$TElapsed) / 60
-SAC_all <- nls(formula = NSpecies ~ a - (a-b) * exp(-c* TElapsed), data=SAC, start = list(a=45, b=1, c=1))
-plot(SAC_all)
+SAC_all <- nls(formula = NSpecies ~ a - (a-b) * exp(-c * TElapsed), data=SAC, start = list(a=45, b=1, c=1))
 SAC_pred <- nlsBootPredict(nlsBoot(SAC_all, niter=500), newdata = data.frame(TElapsed = SAC$TElapsed), interval="confidence")
 colnames(SAC_pred)[2:3] <- c('lwr', 'upr')
 
-# SAC curves for species accumulation relative to the max for each site?
-
-for (i in 1:10) {
-  for (j in site.index[[i]]) {
-    SAC$NSpecies_r[j] <- SAC$NSpecies[j] / sp.count$SpTotal[i]
-  }
-}
+# SAC curves for species accumulation for each site due to richness differences?
 
 # model the overall trend again
+SAC_s <- as.list(rep(0,10))
+SACs_pred <- as.list(rep(0,10))
 set.seed(24)
-SAC_rel <- nls(formula = NSpecies_r ~ a - (a-b) * exp(-c* TElapsed), data=SAC, start = list(a=1, b=0, c=0.1))
-plot(SAC_rel)
-SACr_pred <- nlsBootPredict(nlsBoot(SAC_rel, niter=500), newdata = data.frame(TElapsed = SAC$TElapsed), interval="confidence")
-colnames(SACr_pred)[2:3] <- c('lwr', 'upr')
+for (i in c(1:4,6:10)) {
+  SAC_s[[i]] <- nls(formula = NSpecies ~ a - (a-b) * exp(-c* TElapsed), data=SAC[site.index[[i]],] %>% as.data.frame(), start = list(a=9, b=1, c=0.1))
+  SACs_pred[[i]] <- nlsBootPredict(nlsBoot(SAC_s[[i]], niter=500), newdata = data.frame(TElapsed = SAC$TElapsed[site.index[[i]]]), interval="confidence") %>% as.data.frame
+  colnames(SACs_pred[[i]])[2:3] <- c('lwr', 'upr')
+}
 
 # Visualise ---------------------------------------------------------------
 
@@ -131,12 +127,19 @@ ggplot() +
   scale_color_viridis_d(end=0.9, begin=0.1)
 
 
-ggplot() +
-  geom_ribbon(data=as.data.frame(SACr_pred) %>% bind_cols(., TElapsed=SAC$TElapsed), aes(ymin=lwr, ymax=upr, x=TElapsed), fill='grey80') +
-  geom_line(data=SAC, aes(x=TElapsed, y=NSpecies_r, color=Site), size=0.2) +
-  geom_line(data=data.frame(x=SAC$TElapsed, y=SACr_pred[,1]), aes(x, y), color='black', size=0.5) +
+palette <- viridis::viridis(begin=0.2, end=0.9, n=10)
+plot_SACs <- ggplot() +
   theme_classic(base_size=13) +
-  labs(x='Time elapsed (min)', y='Proportion of total species observed') +
+  geom_point(data=SAC, aes(x=TElapsed, y=NSpecies, color=Site), size=0.5, shape=21) +
+  labs(x='Time elapsed (min)', y='Cumulative number of species observed') +
   theme(axis.line = element_line(size=0.2)) +
-  scale_color_viridis_d(end=0.9, begin=0.1)
+  scale_color_viridis_d(end=0.9, begin=0.1) +
+  coord_cartesian(ylim=c(0,45))
+
+for (i in c(1:4, 6:10)) {
+ plot_SACs <- plot_SACs +
+    geom_ribbon(data=SACs_pred[[i]] %>% bind_cols(., TElapsed=SAC$TElapsed[site.index[[i]]]), aes(ymin=lwr, ymax=upr, x=TElapsed), fill=palette[i], alpha=0.2) +
+    geom_line(data=data.frame(x=SAC$TElapsed[site.index[[i]]], y=SACs_pred[[i]][,1]), aes(x, y), color=palette[i], size=0.5)
+}
   
+plot_SACs
