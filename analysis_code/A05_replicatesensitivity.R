@@ -12,6 +12,11 @@ require(worms) # package for validating species/taxa names
 
 set.seed(24) # repeatability :)
 
+# needed functions
+source('analysis_code/TOP_Fontanaetal2015.R')
+source('./analysis_code/function_convhull.R') # make plottable convex hull vertices, plotting purposes
+
+
 # read in assemblage data from folder
 ruv2.data <- read_excel('src/Video2_SE-NR-TB.xlsx')
 head(ruv2.data) # check read in
@@ -126,7 +131,7 @@ rownames(predictors) <- names(TS2$FEve[1:3])
 # construct data frame of trait space points for each site
 # and then that data frame serves as the input to the TOP metric function by Fontana et al. 2015
 # Source: doi.org/10.1111/1365-2435.12551
-source('analysis_code/TOP_Fontanaetal2015.R')
+
 require(geometry)
 s.point <- as.list(rep(0,3))
 predictors$TOP <- rep(0,3)
@@ -201,7 +206,6 @@ require(patchwork)
 require(viridis)
 
 t.space <- as.list(rep(0,4))
-source('./analysis_code/function_convhull.R') # make plottable convex hull vertices
 
 hull.v <- convhull.vert(tr.point[,1:2])
 hull.v2 <- convhull.vert(tr.point[,3:4])
@@ -356,6 +360,7 @@ dis.combined <- cailliez(gowdis(traits.combined[-1], ord='podani'))
 is.euclid(dis.combined) # check whether distances are Euclidean before running PCoA
 
 set.seed(24)
+require(FD)
 TS.combined <- dbFD(dis.combined, abund[-1], w.abun=T, calc.FRic=T, calc.FDiv=T, m=5, calc.CWM=F, calc.FGR=F, print.pco=T)
 sp_points <- as.data.frame(TS.combined$x.axes)[,1:4] # create a data frame of each species position in the 4D trait space
 sp_points$Species <- rownames(traits.combined)
@@ -387,6 +392,23 @@ if (file.exists('vert.txt')) {
   #Delete file if it exists
   invisible(file.remove('vert.txt'))
 }
+
+
+# ## Comparison indices ---------------------------------------------------
+
+# Bray-Curtis dissimilarity
+# North Reef
+vegdist(abund[c(3,8),-1], method="bray", binary=F)
+# Southeast
+vegdist(abund[c(5,9),-1], method="bray", binary=F)
+# Turtle Beach
+vegdist(abund[c(6,10),-1], method="bray", binary=F)
+
+# trait diversity differences
+tdelta <- unlist(new_vars[3,-1] - new_vars[8,-1])
+tdelta <- c(unlist(new_vars[5,-1] - new_vars[9,-1]), tdelta)
+tdelta <- c(unlist(new_vars[6,-1] - new_vars[10,-1]), tdelta)
+mean(tdelta)
 
 
 ## Visualise assemblage trait space differences ----------------------------
@@ -531,7 +553,7 @@ global2 <- ggplot() + looks +
 pred_long <- new_vars %>% pivot_longer(cols=!Site, names_to="predictor", values_to="value")
 ggplot(pred_long %>% filter(Site %in% abund$Site[c(3,5,6,8:10)])) +
   geom_bar(aes(y=value, x=predictor, fill=Site), stat='identity', position='dodge', color='black') +
-  labs(y='Index measure', x=NULL) +
+  labs(y='Index measure', x=NULL) + theme_bw() +
   scale_y_continuous(expand=expansion(mult=c(.0,.05)), limits=c(0,1))
 
 rm(bars, global1, global2, t.space, A_bar, FD_bar, pred_long, s.space, s.hull.v, s.hull.v2, shortsp, site.total, looks, hull.v, hull.v2, Sp, palette, i, validate, titles) # clear figure objects
