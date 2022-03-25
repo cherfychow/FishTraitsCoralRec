@@ -6,9 +6,10 @@
 
 # Setup and data clean--------------------------------------------------------
 
-require(tidyverse) # data handling
+require(dplyr) # data handling
 require(readxl) # read xls files
 require(worms) # package for validating species/taxa names
+require(stringr)
 
 set.seed(24) # repeatability :)
 
@@ -57,8 +58,8 @@ ruv2.data$Species <- str_replace_all(ruv2.data$Species, validate) # replace miss
 rm(invalid)
 detach(package:worms)
 
+
 ## Clean species lists and tables----------------------------------------------
-rstudioapi::restartSession()
 
 require(dplyr)
 require(stringr)
@@ -87,6 +88,7 @@ Sp.count <- left_join(Sp.count, distinct(Sp.list[,2:3]), by='genus') # and add f
 # Trait space construction, new only ------------------------------------------------
 
 require(FD)
+require(tidyverse)
 traits2 <- read.csv('src/fish_traits2.csv', header=T) # read in the traits table for the second set of videos
 traits <- read.csv('src/fish_traits.csv', header=T)
 
@@ -201,9 +203,9 @@ rm(herb, biter, site.biter, site.herb, traits.sites, abund)
 ## Visualise trait space 2 only --------------------------
 
 require(ggrepel)
-require(tidyverse)
 require(patchwork)
 require(viridis)
+require(ggplot2)
 
 t.space <- as.list(rep(0,4))
 
@@ -215,12 +217,15 @@ palette <- viridis::viridis(n=3, end=0.95, begin=0.1, alpha=0.7, option="mako")
 titles <- c('North Reef', 'Southeast', 'Turtle Beach')
 looks <- theme_bw(base_size=12) + theme(panel.grid = element_blank())
 
+# object for total fishes in each site
+
+
 for (i in 1:3) {
   # Now that the base layers are done, I'll plot each site's points and hulls on
   # first, make a dummy points dataframe only with the species in that site
   pointS <- fish.ruv %>% filter(Site == unique(fish.ruv$Site)[i]) %>% ungroup() %>% select(Species, n)
-  pointS$n <- pointS$n/site.total$site.total[i] # relative abundance of each species
-  pointS <- left_join(pointS, tr.point, by='Species')
+  pointS$n <- pointS$n/site.n$n[i] # relative abundance of each species
+  pointS <- left_join(pointS, tr.point[1:5], by='Species')
   pointS <- pointS[order(pointS$n, decreasing=T),order(colnames(pointS))]
   # make abbreviated species names
   shortsp <- as.data.frame(matrix(unlist(strsplit(pointS$Species[1:3], " ")), ncol=2, byrow=TRUE))
@@ -243,7 +248,7 @@ for (i in 1:3) {
     geom_text_repel(data=pointS %>% arrange(n) %>% top_n(5), aes(label=ShortSp, x=A1, y=A2), force=2,
                     size=2.8, fontface='italic', min.segment.length = 0, point.size=5,
                     max.overlaps = Inf, box.padding = 1, force_pull=0.1) +
-    scale_size_continuous(range=c(1.5,8), guide="none", limits=c(0,0.6)) +
+    scale_size_continuous(range=c(1.5,8), guide="none", limits=c(0,0.7)) +
     if (i != 4) {
       theme(axis.title.y=element_blank(), axis.text.y=element_blank(), 
             legend.position='none')
@@ -258,11 +263,10 @@ for (i in 1:3) {
     geom_text_repel(data=pointS %>% arrange(n) %>% top_n(5), aes(label=ShortSp, x=A3, y=A4), force=2,
                     size=2.8, fontface='italic', min.segment.length = 0, point.size=5,
                     max.overlaps = Inf, box.padding = 1, force_pull=0.1) +
-    scale_size_continuous(range=c(1.5,8), limits=c(0,0.6), name="Relative abundance")  + 
+    scale_size_continuous(range=c(1.5,8), limits=c(0,0.7), name="Relative abundance", guide="legend") + 
     if (i != 4) {
-      theme(axis.title.y=element_blank(), axis.text.y=element_blank(), 
-            legend.position='none')
-    } 
+      theme(axis.title.y=element_blank(), axis.text.y=element_blank())
+    }
   else {theme()}
   
   t.space[[i]] <- s.space[[1]] / s.space[[2]] # stack them with patchwork and store
@@ -301,8 +305,9 @@ bars <- (A_bar | FD_bar) * plot_layout(widths=c(2,3))
 
 Fig2 <- (bars / ((global1/global2) | t.space[[1]] | t.space[[2]] | t.space[[3]])) * plot_layout(guides='collect', heights = c(1,3)) * theme(axis.text = element_text(size=9)) & theme(plot.title=element_text(face='bold', hjust=0.5, size=13))
 Fig2
+ggsave(filename = "../MS_CoralReefs/rev1/revision_figs/traitcompare_indp.svg", device = "svg", width=30, height=16, units='cm', dpi=300)
 
-rm(bars, global1, global2, t.space, A_bar, FD_bar, pred_long, s.space, s.hull.v, s.hull.v2, shortsp, site.total, looks, hull.v, hull.v2, Sp, palette, i, validate, titles) # clear figure objects
+rm(bars, global1, global2, t.space, A_bar, FD_bar, pred_long, s.space, s.hull.v, s.hull.v2, shortsp, site.n, looks, hull.v, hull.v2, Sp, palette, i, validate, titles) # clear figure objects
 
 
 
@@ -492,7 +497,7 @@ for (i in 1:3) {
                     size=2.8, fontface='italic', min.segment.length = 0, point.size=5,
                     max.overlaps = Inf, box.padding = 1, force_pull=0.1) +
     geom_polygon(data=hull2_2, aes(x=A3, y=A4), fill='orange', alpha=0.25) +
-    geom_point(data=pointS %>% left_join(., traits.combined, by="Species"), 
+    geom_point(data=pointS2 %>% left_join(., traits.combined, by="Species"), 
                aes(x=A3, y=A4), fill='orange', color='#666666', shape=21) +
     geom_text_repel(data=pointS2 %>% arrange(n) %>% top_n(5), aes(label=ShortSp, x=A3, y=A4), force=2,
                     size=2.8, fontface='italic', min.segment.length = 0, point.size=5,
@@ -537,18 +542,18 @@ global1 <- ggplot() + looks +
   geom_polygon(data=hull, aes(x=A1, y=A2), fill='grey80', color='grey20') +
   geom_point(data=left_join(pointS, traits2, by="Species"), aes(x=A1, y=A2), size=2, shape=21, fill='black', alpha=0.5) +
   geom_polygon(data=hull2, aes(x=A1, y=A2), fill='orange', color='orange', alpha=0.5) +
-  geom_point(data=left_join(pointS, traits2, by="Species"), aes(x=A1, y=A2), size=2, shape=21, fill='orange', alpha=0.5) +
+  geom_point(data=left_join(pointS2, traits2, by="Species"), aes(x=A1, y=A2), size=2, shape=21, fill='orange', alpha=0.5) +
   labs(x='PCo1', y='PCo2', title='RUV1 v RUV2')
 
 global2 <- ggplot() + looks +
   geom_polygon(data=hull_2, aes(x=A3, y=A4), fill='grey80', color='grey20') +
   geom_point(data=left_join(pointS, traits2, by="Species"), aes(x=A3, y=A4), size=2, shape=21, fill='black', alpha=0.5) +
   geom_polygon(data=hull2_2, aes(x=A3, y=A4), fill='orange', color='orange', alpha=0.5) +
-  geom_point(data=left_join(pointS, traits2, by="Species"), aes(x=A3, y=A4), size=2, shape=21, fill='orange', alpha=0.5) +
+  geom_point(data=left_join(pointS2, traits2, by="Species"), aes(x=A3, y=A4), size=2, shape=21, fill='orange', alpha=0.5) +
   labs(x='PCo3', y='PCo4')
 
 ((global1 / global2) | t.space[[1]] | t.space[[2]] | t.space[[3]])
-
+ggsave(filename = "../MS_CoralReefs/rev1/revision_figs/traitcompare_together.svg", device = "svg", width=28, height=12, units='cm', dpi=300)
 
 pred_long <- new_vars %>% pivot_longer(cols=!Site, names_to="predictor", values_to="value")
 ggplot(pred_long %>% filter(Site %in% abund$Site[c(3,5,6,8:10)])) +
@@ -556,5 +561,5 @@ ggplot(pred_long %>% filter(Site %in% abund$Site[c(3,5,6,8:10)])) +
   labs(y='Index measure', x=NULL) + theme_bw() +
   scale_y_continuous(expand=expansion(mult=c(.0,.05)), limits=c(0,1))
 
-rm(bars, global1, global2, t.space, A_bar, FD_bar, pred_long, s.space, s.hull.v, s.hull.v2, shortsp, site.total, looks, hull.v, hull.v2, Sp, palette, i, validate, titles) # clear figure objects
+rm(bars, global1, global2, t.space, A_bar, FD_bar, pred_long, s.space, s.hull.v, s.hull.v2, shortsp, looks, hull.v, hull.v2, Sp, palette, i, validate, titles) # clear figure objects
 
