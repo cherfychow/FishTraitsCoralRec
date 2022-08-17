@@ -77,7 +77,7 @@ for (i in 1:7) {
 }
 
 rm(pointS)
-point$n <- Sp.count$n/624 # put in global abundances to visualise all sites
+point$n <- Sp.count$n/sum(Sp.count$n) # put in global abundances to visualise all sites
 global1 <- ggplot() + looks +
   geom_polygon(data=hull.v, aes(x=A1, y=A2), fill='transparent', color='grey') +
   geom_point(data=left_join(point, traits, by="Species"), aes(x=A1, y=A2, shape=ForageMode), size=2, fill='black', alpha=0.5) +
