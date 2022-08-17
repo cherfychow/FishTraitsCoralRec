@@ -16,8 +16,8 @@ require(viridis)
 t.space <- as.list(rep(0,4))
 source('./analysis_code/function_convhull.R') # make plottable convex hull vertices
 
-hull.v <- convhull.vert(point[,1:2])
-hull.v2 <- convhull.vert(point[,3:4])
+hull.v <- convhull.vert(point_b[,1:2])
+hull.v2 <- convhull.vert(point_b[,3:4])
 
 # palette for sites
 palette <- viridis::viridis(n=7, end=0.95, begin=0.1, alpha=0.7, option="mako")
@@ -26,9 +26,9 @@ titles <- c('Corner Beach', 'Lagoon', 'North Reef', 'Resort', 'Southeast', 'Turt
 for (i in 1:7) {
   # Now that the base layers are done, I'll plot each site's points and hulls on
   # first, make a dummy points dataframe only with the species in that site
-  pointS <- UBRUVspecies %>% filter(Site == unique(UBRUVspecies$Site)[i]) %>% ungroup() %>% select(Species, n)
+  pointS <- fishcomm_b %>% filter(Site == unique(fishcomm_b$Site)[i], Species %in% traits_benth$Species) %>% ungroup() %>% select(Species, n)
   pointS$n <- pointS$n/site.total$site.total[i] # relative abundance of each species
-  pointS <- left_join(pointS, point, by='Species')
+  pointS <- left_join(pointS, point_b, by='Species')
   pointS <- pointS[order(pointS$n, decreasing=T),order(colnames(pointS))]
   # make abbreviated species names
   shortsp <- as.data.frame(matrix(unlist(strsplit(pointS$Species[1:3], " ")), ncol=2, byrow=TRUE))
@@ -46,7 +46,7 @@ for (i in 1:7) {
     geom_polygon(data=hull.v, aes(x=A1, y=A2), color='grey', fill='white') +
     labs(x='PCo1', y='PCo2', title=titles[i]) +
     geom_polygon(data=s.hull.v, aes(x=A1, y=A2), fill=palette[i], alpha=0.25) +
-    geom_point(data=pointS %>% left_join(., traits, by="Species"),
+    geom_point(data=pointS %>% left_join(., traits_benth, by="Species"),
                aes(x=A1, y=A2, size=n), fill=palette[i], color='#666666', shape=21) +
     geom_text_repel(data=pointS %>% arrange(n) %>% top_n(5), aes(label=ShortSp, x=A1, y=A2), force=2,
                     size=2.8, fontface='italic', min.segment.length = 0, point.size=5,
@@ -61,7 +61,7 @@ for (i in 1:7) {
     geom_polygon(data=hull.v2, aes(x=A3, y=A4), color='grey', fill='white') +
     labs(x='PCo3', y='PCo4') +
     geom_polygon(data=s.hull.v2, aes(x=A3, y=A4), fill=palette[i], alpha=0.25) +
-    geom_point(data=pointS %>% left_join(., traits, by="Species"), 
+    geom_point(data=pointS %>% left_join(., traits_benth, by="Species"), 
                aes(x=A3, y=A4, size=n), fill=palette[i], color='#666666', shape=21) +
     geom_text_repel(data=pointS %>% arrange(n) %>% top_n(5), aes(label=ShortSp, x=A3, y=A4), force=2,
                     size=2.8, fontface='italic', min.segment.length = 0, point.size=5,
@@ -77,20 +77,20 @@ for (i in 1:7) {
 }
 
 rm(pointS)
-point$n <- Sp.count$n/sum(Sp.count$n) # put in global abundances to visualise all sites
+point_b <- left_join(point_b, fish_sp[3:4], by="Species") %>% mutate(n = n/site.total[8,1]) # put in global abundances to visualise all sites
 global1 <- ggplot() + looks +
   geom_polygon(data=hull.v, aes(x=A1, y=A2), fill='transparent', color='grey') +
-  geom_point(data=left_join(point, traits, by="Species"), aes(x=A1, y=A2, shape=ForageMode), size=2, fill='black', alpha=0.5) +
+  geom_point(data=left_join(point_b, traits_benth, by="Species"), aes(x=A1, y=A2, shape=ForageMode), size=2, fill='black', alpha=0.5) +
   labs(x='PCo1', y='PCo2', title='All sites') +
   scale_fill_grey(aesthetics="color",start=0.2, end=0.7) + scale_shape_manual(values=c(1:6,21:25), name="Foraging mode")
 
 global2 <- ggplot() + looks +
   geom_polygon(data=hull.v2, aes(x=A3, y=A4), fill='transparent', color='grey') +
-  geom_point(data=left_join(point, traits, by="Species"), aes(x=A3, y=A4, shape=ForageMode), size=2, fill='black', alpha=0.5) +
+  geom_point(data=left_join(point_b, traits_benth, by="Species"), aes(x=A3, y=A4, shape=ForageMode), size=2, fill='black', alpha=0.5) +
   labs(x='PCo3', y='PCo4') + theme(legend.title=element_blank()) +
   scale_fill_grey(aesthetics="color", start=0.2, end=0.7) + scale_shape_manual(values=c(1:6,21:25), guide="none")
 
-pred_long <- predictors %>% pivot_longer(cols=!Site, names_to="predictor", values_to="value")
+pred_long <- predictors_b %>% pivot_longer(cols=!Site, names_to="predictor", values_to="value")
 
 FD_bar <- ggplot(pred_long %>% filter(predictor %in% c('TOP', 'TEve', 'TDiv'))) +
   geom_bar(aes(y=value, x=predictor, fill=Site), stat='identity', position='dodge', color='black') +
@@ -107,8 +107,8 @@ A_bar <- ggplot(pred_long %>% filter(predictor == 'Herb' | predictor == 'Benthic
 
 bars <- (A_bar | FD_bar) * plot_layout(widths=c(2,3))
 
-Fig2 <- (bars / ((global1/global2) | t.space[[1]] | t.space[[2]] | t.space[[3]]) / (t.space[[4]] | t.space[[5]] | t.space[[6]] | t.space[[7]])) * plot_layout(guides='collect', heights = c(1,3,3)) * theme(axis.text = element_text(size=9)) & theme(plot.title=element_text(face='bold', hjust=0.5, size=13))
+Fig2 <- (bars / ((global1/global2) | t.space[[1]] | t.space[[2]] | t.space[[3]]) / (t.space[[4]] | t.space[[5]] | t.space[[6]] | t.space[[7]])) * plot_layout(heights = c(1,3,3)) * theme(axis.text = element_text(size=9)) & theme(plot.title=element_text(face='bold', hjust=0.5, size=13))
 Fig2
 
-ggsave(filename = "./figures/02_traitspaces.svg", device = "svg", width=30, height=30, units='cm', dpi=300)
+ggsave(filename = "./figures/02_trait_benth.svg", device = "svg", width=30, height=30, units='cm', dpi=300)
 rm(FD_bar, A_bar, bars, global1, global2, t.space, s.hull.v, s.hull.v2, s.space, hull.v, hull.v2)
