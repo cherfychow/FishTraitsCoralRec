@@ -170,6 +170,14 @@ rownames(sp_contr) <- 1:nrow(sp_contr)
 sp_contr$TEve <- as.numeric(sp_contr$TEve)
 sp_contr$TDiv <- as.numeric(sp_contr$TDiv)
 
+# the TOP index function generates a vert.txt file but we don't need that anymore
+if (file.exists('vert.txt')) {
+  #Delete file if it exists
+  invisible(file.remove('vert.txt'))
+}
+
+predictors <- predictors_b
+
 # Calculate relative abundances herbivore biters --------------------------
 
 # this doesn't change

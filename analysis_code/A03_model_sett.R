@@ -17,9 +17,18 @@
 
 require(tidyverse)
 require(lme4)
+require(MuMIn)
 require(performance)
 require(readxl)
 set.seed(24)
+
+# predictor collinearity check
+cor.sett <- as_tibble(round(cor(predictors[-1]),2))
+head(cor.sett)
+cor.sett$var1 <- colnames(cor.sett)
+cor.sett <- pivot_longer(as_tibble(cor.sett), -var1)
+ggplot(data = cor.sett %>% filter(value != 1), aes(x=var1, y=name, fill=sqrt(value^2))) + 
+  geom_tile() + looks + scale_fill_viridis_c(name=bquote('absolute value'~R^2)) + labs(x=NULL, y=NULL)
 
 settlement <- read_xlsx('./src/coral_settlement.xlsx', sheet='Sheet1', col_names=T)
 # head(settlement)
@@ -40,53 +49,17 @@ str(SpatData) # check that all of the data are in the proper data types before f
 SpatData$Site <- as.factor(SpatData$Site) # Yep, site was not a factor
 SpatData$ForRate <- as.numeric(SpatData$ForRate)
 
-Model.Sett <- as.list(c(0,0))
+sett_global <- glmer.nb(data=SpatData, 
+                        Spat ~ ForRate + TEve + TDiv + TOP + Herb + Benthic + (1|Site), na.action = 'na.fail')
+# use dredge to run model selection with all possible predictor combinations (with site fixed)
+sett.select <- dredge(Model.Sett[[1]], beta = 'none', evaluate = T, rank = 'AICc', fixed = 'Site')
+sett.select2 <- dredge(Model.Sett[[1]], beta = 'none', evaluate = T, rank = 'BIC', fixed = 'Site')
+sett.select
+get.models(sett.select, 1)[[1]] # print results for top model
 
-Model.Sett[[1]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + TEve + TDiv + TOP + Herb + Benthic + (1|Site))
-Model.Sett[[2]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + Herb + Benthic + (1|Site)) # failed to converge
-Model.Sett[[3]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + TEve + TDiv + TOP + (1|Site))
-Model.Sett[[4]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + TDiv + TOP + Herb + (1|Site))
-Model.Sett[[5]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + TDiv + TOP + Herb + Benthic + (1|Site))
-Model.Sett[[6]] <- glmer.nb(data=SpatData, 
-                              Spat ~ (1|Site))
-Model.Sett[[7]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + Herb + (1|Site))
-Model.Sett[[8]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + TEve + TDiv + TOP + Benthic + (1|Site))
-Model.Sett[[9]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + TEve + TDiv + TOP + Herb + (1|Site))
-
-for (i in 1:length(Model.Sett)) {
-  print(summary(Model.Sett[[i]]))
-}
-
-Model.Sett <- Model.Sett[-2]
-
-## Model comparison summary
-summary.sett <- data.frame(Model=1:length(Model.Sett))
-for (i in 1:length(Model.Sett)) {
-  summary.sett$nTerms[i] <- length(rownames(summary(Model.Sett[[i]])$coefficients))-1
-  summary.sett$AICc[i] <- round(MuMIn::AICc(Model.Sett[[i]]), 2)
-  summary.sett$BIC[i] <- round(BIC(Model.Sett[[i]]), 2)
-  summary.sett$dev[i] <- round(summary(Model.Sett[[i]])$AIC[4], 2)
-  summary.sett$Dispersion[i] <- round(summary(Model.Sett[[i]])$AIC[4]/df.residual(Model.Sett[[i]]), 2)
-}
-summary.sett <- summary.sett %>% arrange(AICc, BIC)
-summary.sett$wAIC <- round(MuMIn::Weights(summary.sett$AICc), 3)
-summary.sett$dAIC <- summary.sett$AICc-summary.sett$AICc[1] %>% round(., 3)
-summary.sett$dBIC <- summary.sett$BIC-summary.sett$BIC[1] %>% round(., 3)
-rownames(summary.sett) <- summary.sett$Model
-print(summary.sett)
-
-i=4
-model_performance(Model.Sett[[i]])
+model_performance(get.models(sett.select, 1)[[1]])
 # diagnostic plots
-print(check_model(Model.Sett[[i]]))
+print(check_model(get.models(sett.select, 1)[[1]]))
 # overdispersion check
 # QQ plot
 par(mfrow=c(1,2))
