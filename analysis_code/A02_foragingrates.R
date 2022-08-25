@@ -63,7 +63,7 @@ ForRate <- ForRate %>% group_by(Site, Species) %>%
 # sum_ij
 predictors$ForRate <- left_join(ForRate, sp.inf, by='Species') %>% 
   mutate(SpFeed=0.01*SpInf*sumLBi) %>% group_by(Site) %>% 
-  summarise(ForRate=sum(SpFeed)) %>% ungroup() %>% pull(ForRate)
+  summarise(ForRate=sum(SpFeed)) %>% ungroup() %>% pull(ForRate) %>% as.vector
 predictors$ForRate <- scale(predictors$ForRate, scale=T, center=F)
 
 rm(BiteSp, length.convert, sp.inf, influence, inf.pca)

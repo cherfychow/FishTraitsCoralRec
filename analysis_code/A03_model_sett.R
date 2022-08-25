@@ -52,12 +52,12 @@ SpatData$ForRate <- as.numeric(SpatData$ForRate)
 sett_global <- glmer.nb(data=SpatData, 
                         Spat ~ ForRate + TEve + TDiv + TOP + Herb + Benthic + (1|Site), na.action = 'na.fail')
 # use dredge to run model selection with all possible predictor combinations (with site fixed)
-sett.select <- dredge(Model.Sett[[1]], beta = 'none', evaluate = T, rank = 'AICc', fixed = 'Site')
-sett.select2 <- dredge(Model.Sett[[1]], beta = 'none', evaluate = T, rank = 'BIC', fixed = 'Site')
+sett.select <- dredge(sett_global, beta = 'none', evaluate = T, rank = 'AICc', fixed = c('ForRate, Site'))
+# sett.select2 <- dredge(sett_global, beta = 'none', evaluate = T, rank = 'BIC', fixed = 'Site')
 sett.select
-get.models(sett.select, 1)[[1]] # print results for top model
-
-model_performance(get.models(sett.select, 1)[[1]])
+sett <- get.models(sett.select, 1)[[1]] # print results for top model
+summary(sett)
+model_performance(sett)
 # diagnostic plots
 print(check_model(get.models(sett.select, 1)[[1]]))
 # overdispersion check
