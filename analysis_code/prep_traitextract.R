@@ -11,31 +11,30 @@
 require(tidyverse)
 require(rfishbase) # for retrieving functional trait data
 
+# assumes these source files are loaded. File = object name
+# fish_sptaxonomy.csv = fish_sp (species list)
+# fish_assemblage.csv = fish_assemblage (counts by species and site)
+# fish_sp <- read.csv('src/fish_sptaxonomy.csv', header = T)[-1]
+# fish_assemblage <- read.csv('src/fish_assemblage.csv', header=T) %>% filter(!str_detect(Species, ' sp$'))
+
 # Trait data --------------------------------------------------------------
 
 # pull from Fishbase
-fishbase.sp <- validate_names(sort(unique(UBRUV$Species))) # expect it to remove 5 entries because they're at the genus level
+fishbase.sp <- validate_names(sort(unique(fish_sp$Species))) # we didn't use fishbase to validate names, so we may have synonyms in the cleaned species list
 sp.traits <- species(fishbase.sp) # make functional trait data frame for the species list
 ecol.traits <- ecology(fishbase.sp) # table of ecological traits
 
 
 ## ----Trait selection------------------------------------------------------------------------------------------------------------
 trait.data <- with(ecol.traits, data.frame(Species, FeedingType, FoodTroph, FoodSeTroph))
+food.data <- diet(fishbase.sp) # load food data from fishbase
+fooditems <- diet_items()
+fooditems <- fooditems %>% arrange(DietCode, desc(DietPercent))
+# species, diet code, foodI, foodII merge
+diet.traits <- left_join(food.data[2:3], fooditems[c(2,4,5,7)], by="DietCode") %>% 
+  select(!DietCode)
 
-# deal with the average length column now
-length.convert <- c('2.5', '15', '25', '35', '45', '7.5', '55', '85')
-names(length.convert) <- sort(unique(Sp.countL$Length))
-Sp.countL$Length <- str_replace_all(Sp.countL$Length, length.convert)
-Sp.countLength <- Sp.countL %>% group_by(SpeciesV, Length) %>% mutate(sumL=as.numeric(Length)*n) %>% # transitional column
-  ungroup() %>% group_by(SpeciesV) %>% summarise(totaln=sum(n), totalL=sum(sumL)) %>% # compress to one row per species
-  mutate(meanL=totalL/totaln) # calculate the meanL
-colnames(Sp.count)[1] <- 'Species'
-colnames(Sp.countLength)[1] <- 'Species'
-trait.data <- left_join(trait.data, Sp.countLength %>% select(Species, meanL), by='Species')
-food.data <- fooditems(fishbase.sp) # load food data from fishbase
-morph.data <- morphometrics(fishbase.sp)
-head.data <- morph.data %>% group_by(Species) %>% summarise(POLprop=mean(POL/SL)*100)
-# for preorbital length? possible proxy for bite size (but very flawed)
+diet.traits <- diet.traits %>% filter(!DietPercent < 15) # remove any diet item that doesn't consitute at least 20%
 
 # refine the traits manually outside of R
 write_csv(trait.data, na='NA', col_names=T, path='./trait_data.csv')
