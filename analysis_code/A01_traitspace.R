@@ -41,48 +41,7 @@ rownames(abund) <- abund$Site # FD package reads row names. move over.
 abund$Site <- NULL
 rm(NAlist)
 
-
-# Trait space + diversity metrics (original) -------------------------------------------------
-
-# calculate FD indices for each site with respect to the global functional trait space
-# because this is with respect to all study sites, sites are comparable
-# not calculating TRichness because we're using an alternative calculation
-trait.dis <- cailliez(gowdis(traits[,-1], ord='podani'))
-is.euclid(trait.dis) # check whether distances are Euclidean before running PCoA
-
-FD_global <- dbFD(trait.dis, abund, w.abun=T, calc.FRic=T, calc.FDiv=T, m=4, calc.CWM=F, calc.FGR=F, print.pco=T)
-point <- as.data.frame(FD_global$x.axes)[,1:4] # create a data frame of each species position in the 4D trait space
-point$Species <- rownames(traits)
-
-# extract the FD indices from the FD_global object, create a dataframe of them
-predictors <- data.frame(Site=names(FD_global$FEve[1:7]),TEve=FD_global$FEve[1:7], TDiv=FD_global$FDiv[1:7])
-# only 7 for the 7 sites. Ignore the global FD measures
-rownames(predictors) <- names(FD_global$FEve[1:7])
-
-
-# construct data frame of trait space points for each site
-# and then that data frame serves as the input to the TOP metric function by Fontana et al. 2015
-# Source: doi.org/10.1111/1365-2435.12551
-source('analysis_code/TOP_Fontanaetal2015.R')
-s.point <- as.list(rep(0,7))
-predictors$TOP <- rep(0, 7)
-for (i in 1:7) {
-  # first, make a dummy points dataframe only with the species in that site
-  s.point[[i]] <- fish_assemblage %>% filter(Site == unique(Site)[i]) %>% ungroup() %>% select(Species)
-  s.point[[i]] <- left_join(s.point[[i]], point, by='Species')# use the point df to match the positions from the PCoA
-  predictors$TOP[i] <- TOP.index(s.point[[i]][-1])[2] # calculate the TOP index
-}
-
-# now we have to standardise this by the global trait space TOP
-predictors$TOP <- predictors$TOP/TOP.index(point[1:4])[2]
-
-# the TOP index function generates a vert.txt file but we don't need that anymore
-if (file.exists('vert.txt')) {
-  #Delete file if it exists
-  invisible(file.remove('vert.txt'))
-}
-
-# Trait space + diversity metrics (modified) -------------------------------------------------
+# Trait space + diversity metrics -------------------------------------------------
 
 # Removing species from trait space analysis that we know a priori to not deliver any foraging function
 # planktivores, piscivores, cleaners, non-benthic foragers.
@@ -177,6 +136,8 @@ if (file.exists('vert.txt')) {
 }
 
 predictors <- predictors_b
+
+
 
 # Calculate relative abundances herbivore biters --------------------------
 
