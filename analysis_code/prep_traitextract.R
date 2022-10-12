@@ -29,16 +29,32 @@ ecol.traits <- ecology(fishbase.sp) # table of ecological traits
 trait.data <- with(ecol.traits, data.frame(Species, FeedingType, FoodTroph, FoodSeTroph))
 food.data <- diet(fishbase.sp) # load food data from fishbase
 fooditems <- diet_items()
+fooditems2 <- fooditems(species_list = fishbase.sp) # not all species have diet data, but do have food items data
+fooditems2 <- fooditems2 %>% select(Species, Locality, FoodII, FoodIII, starts_with('Common'), Foodname)
 fooditems <- fooditems %>% arrange(DietCode, desc(DietPercent))
 # species, diet code, foodI, foodII merge
 diet.traits <- left_join(food.data[2:3], fooditems[c(2,4,5,7)], by="DietCode") %>% 
   select(!DietCode)
 
-diet.traits <- diet.traits %>% filter(!DietPercent < 15) # remove any diet item that doesn't consitute at least 20%
+diet.traits <- diet.traits %>% filter(!DietPercent < 15) %>%  # remove any diet item that doesn't consitute at least 20%
+  arrange(Species, desc(DietPercent))
+
+# load Parraviccini et al. (2020) trophic groupings
+mod_predators <- read.csv("https://github.com/valerianoparravicini/Trophic_Fish_2020/raw/master/output/results/mod_predators.csv")
+troph <- c('1' = 'sess_inv',
+           '2' = 'herb_mic_det',
+           '3' = 'cor',
+           '4' = 'pisc',
+           '5' = 'micro_inv',
+           '6' = 'macro_inv',
+           '7' = 'crust',
+           '8' = 'plank') # grouping key from paper
+trait.data <- left_join(trait.data, mod_predators, by=c("Species" = "species"))
+trait.data$cluster <- str_replace_all(trait.data$cluster, troph)
+
+n_distinct(diet.traits$Species) + nrow(fooditems2 %>% filter(is.na(CommonessII) == F, Species %in% diet.traits$Species == F) %>% distinct(Species)) # no of species with food item dominance info
+n_distinct(fish_sp$Species) - 72 # 32 species without dominance data (informed by trophic grouping)
 
 # refine the traits manually outside of R
 write_csv(trait.data, na='NA', col_names=T, path='./trait_data.csv')
-rm(trait.data)
-rm(food.data)
-rm(morph.data)
-rm(head.data)
+rm(list = ls()) # clear environment
