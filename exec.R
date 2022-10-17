@@ -8,9 +8,10 @@
 
 source('./analysis_code/A01_traitspace.R') # construct trait spaces for each site
 # also calculates trait diversity predictors for models
-source('./analysis_code/A03_foragingrates.R') # processing of weighted foraging rate predictors
-source('./analysis_code/A04_model_sett.R') # settlement model constructions + selection
-source('./analysis_code/A05_model_rec.R') # recruitment model constructions + selection
+# expect computation time of a few minutes, longest part of analysis
+source('./analysis_code/A02_foragingrates.R') # processing of weighted foraging rate predictors
+source('./analysis_code/A03_model_sett.R') # settlement model constructions + selection
+source('./analysis_code/A04_model_rec.R') # recruitment model constructions + selection
 
 
 # Figure generation -------------------------------------------------------

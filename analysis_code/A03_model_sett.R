@@ -2,8 +2,7 @@
 #############################################################################
 
 # FishTraitsxCoralRec
-# Responses to fish trait diversity in coral settlement and recruitment
-# Coral settlement model selection
+# Coral settlement model construction and selection
 # Author: Cher Chow
 
 #############################################################################
@@ -27,6 +26,7 @@ cor.sett <- as_tibble(round(cor(predictors[-1]),2))
 head(cor.sett)
 cor.sett$var1 <- colnames(cor.sett)
 cor.sett <- pivot_longer(as_tibble(cor.sett), -var1)
+looks <- theme_bw(base_size=13) + theme(panel.grid=element_blank(), axis.ticks=element_line(size=0.3))
 ggplot(data = cor.sett %>% filter(value != 1), aes(x=var1, y=name, fill=sqrt(value^2))) + 
   geom_tile() + looks + scale_fill_viridis_c(name=bquote('absolute value'~R^2)) + labs(x=NULL, y=NULL)
 
@@ -51,21 +51,53 @@ SpatData$ForRate <- as.numeric(SpatData$ForRate)
 
 sett_global <- glmer.nb(data=SpatData, 
                         Spat ~ ForRate + TEve + TDiv + TOP + Herb + Benthic + (1|Site), na.action = 'na.fail')
-# use dredge to run model selection with all possible predictor combinations (with site fixed)
-sett.select <- dredge(sett_global, beta = 'none', evaluate = T, rank = 'AICc', fixed = c('ForRate, Site'))
-# sett.select2 <- dredge(sett_global, beta = 'none', evaluate = T, rank = 'BIC', fixed = 'Site')
-sett.select
-sett <- get.models(sett.select, 1)[[1]] # print results for top model
+# use dredge to run model selection with all possible predictor combinations 
+# fixed variables i.e. constant predictors in all candidate combinations = ForRate + Site
+sett.select <- dredge(sett_global, beta = 'none', evaluate = T, rank = 'AICc', fixed = c('ForRate', 'Site'))
+sett.select # selection table
+
+## Custom selection table
+## Model comparison summary
+top10 <- get.models(sett.select, 1:10)
+summary.sett <- data.frame(ModelRank=1:10) # just top 10 candidates
+for (i in 1:10) {
+  summary.sett$nTerms[i] <- getAllTerms(top10[[i]], intercept = F) %>% length
+  summary.sett$AICc[i] <- round(MuMIn::AICc(top10[[i]]), 2)
+  summary.sett$BIC[i] <- round(BIC(top10[[i]]), 2)
+  summary.sett$dev[i] <- round(summary(top10[[i]])$AIC[4], 2)
+  summary.sett$Dispersion[i] <- round(summary(top10[[i]])$AIC[4] / df.residual(top10[[i]]), 2)
+}
+summary.sett <- summary.sett %>% arrange(AICc, BIC)
+summary.sett$wAIC <- round(MuMIn::Weights(summary.sett$AICc), 3)
+summary.sett$dAIC <- summary.sett$AICc - summary.sett$AICc[1] %>% round(., 3)
+summary.sett$dBIC <- summary.sett$BIC - summary.sett$BIC[1] %>% round(., 3)
+print(summary.sett)
+
+# SELECT MODEL
+sett <- get.models(sett.select, 1)[[1]] # picked model 1 based on AICc
 summary(sett)
 model_performance(sett)
+
 # diagnostic plots
-print(check_model(get.models(sett.select, 1)[[1]]))
+print(check_model(sett))
+
 # overdispersion check
 # QQ plot
 par(mfrow=c(1,2))
-plot(predict(Model.Sett[[i]], type='link', re.form=NA), residuals(Model.Sett[[i]], type='deviance'), xlab='Predicted', ylab='Deviance')
+plot(predict(sett, type='link', re.form=NA), residuals(sett, type='deviance'), xlab='Predicted', ylab='Deviance')
 abline(h=0, lty=2)
-qqnorm(residuals(Model.Sett[[i]], type='deviance'))
-qqline(residuals(Model.Sett[[i]], type='deviance'))
+qqnorm(residuals(sett, type='deviance'))
+qqline(residuals(sett, type='deviance'))
 par(mfrow=c(1,1))
 
+# save model outputs
+sink(file = 'outputs/settlement_model.txt', append = F) # start file sink
+
+## SETTLEMENT MODEL SELECTION
+print(sett.select)
+print(summary.sett)
+
+## SELECTED SETTLEMENT MODEL
+summary(sett)
+
+sink()

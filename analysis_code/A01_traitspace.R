@@ -15,7 +15,8 @@ require(FD) # calculate dissimilarity matrices + functional diversity indices
 set.seed(24) # repeatability :)
 
 # load data
-traits <- read.csv('src/fish_traits.csv', header=T, row.names = 1)
+traits <- read.csv('src/fish_traits.csv', header=T)
+rownames(traits) <- traits$Species
 # we can't run trait analysis on uncertain species IDs
 fish_assemblage <- read.csv('src/fish_assemblage.csv', header=T) %>% filter(!str_detect(Species, ' sp$'))
 fish_sp <- read.csv('src/fish_sptaxonomy.csv', header=T)[-1]
@@ -43,29 +44,22 @@ rm(NAlist)
 
 # Trait space + diversity metrics -------------------------------------------------
 
-# Removing species from trait space analysis that we know a priori to not deliver any foraging function
-# planktivores, piscivores, cleaners, non-benthic foragers.
-# Do it by water column of feeding, but not invertivores because they form part of our question
-traits_benth <- traits %>% filter(ColumnFeed == 'benthic', str_detect(TrophicGroup, 'plank|pisci|clean', negate = T))
-nrow(traits) - nrow(traits_benth) # what's the change
-
-# subset the abundance matrix according to these species left
-abund_benth <- abund[paste(traits_benth$Species)]
-
 # calculate FD indices for each site with respect to the global functional trait space
 # because this is with respect to all study sites, sites are comparable
 # not calculating TRichness because we're using an alternative calculation
-benth.dis <- cailliez(gowdis(traits_benth[-c(1,5)], ord='podani'))
-is.euclid(benth.dis) # check whether distances are Euclidean before running PCoA
+trait.dis <- cailliez(gowdis(traits[,-1], ord='podani'))
+is.euclid(trait.dis) # check whether distances are Euclidean before running PCoA
 
-traitspace_b <- dbFD(benth.dis, abund_benth, w.abun=T, calc.FRic=T, calc.FDiv=T, m=4, calc.CWM=F, calc.FGR=F, print.pco=T)
-point_b <- as.data.frame(traitspace_b$x.axes)[,1:4] # create a data frame of each species position in the 4D trait space
-point_b$Species <- rownames(traits_benth)
+FD_global <- dbFD(trait.dis, abund, w.abun=T, calc.FRic=T, calc.FDiv=T, m=4, calc.CWM=F, calc.FGR=F, print.pco=T)
+point <- as.data.frame(FD_global$x.axes)[,1:4] # create a data frame of each species position in the 4D trait space
+point$Species <- rownames(traits)
+
+## If you were to run PCoA checks, this is the time ##
 
 # extract the FD indices from the FD_global object, create a dataframe of them
-predictors_b <- data.frame(Site=names(traitspace_b$FEve[1:7]),TEve=traitspace_b$FEve[1:7], TDiv=traitspace_b$FDiv[1:7])
+predictors <- data.frame(Site=names(FD_global$FEve[1:7]),TEve=FD_global$FEve[1:7], TDiv=FD_global$FDiv[1:7])
 # only 7 for the 7 sites. Ignore the global FD measures
-rownames(predictors_b) <- names(traitspace_b$FEve[1:7])
+rownames(predictors) <- names(FD_global$FEve[1:7])
 
 
 # construct data frame of trait space points for each site
@@ -73,17 +67,16 @@ rownames(predictors_b) <- names(traitspace_b$FEve[1:7])
 # Source: doi.org/10.1111/1365-2435.12551
 source('analysis_code/TOP_Fontanaetal2015.R')
 s.point <- as.list(rep(0,7))
-predictors_b$TOP <- rep(0, 7)
-fishcomm_b <- fish_assemblage %>% filter(Species %in% traits_benth$Species)
+predictors$TOP <- rep(0, 7)
 for (i in 1:7) {
   # first, make a dummy points dataframe only with the species in that site
-  s.point[[i]] <- fishcomm_b %>% filter(Site == unique(Site)[i]) %>% ungroup() %>% select(Species)
-  s.point[[i]] <- left_join(s.point[[i]], point_b, by='Species')# use the point df to match the positions from the PCoA
-  predictors_b$TOP[i] <- TOP.index(s.point[[i]][-1])[2] # calculate the TOP index
+  s.point[[i]] <- fish_assemblage %>% filter(Site == unique(Site)[i]) %>% ungroup() %>% select(Species)
+  s.point[[i]] <- left_join(s.point[[i]], point, by='Species')# use the point df to match the positions from the PCoA
+  predictors$TOP[i] <- TOP.index(s.point[[i]][-1])[2] # calculate the TOP index
 }
 
 # now we have to standardise this by the global trait space TOP
-predictors_b$TOP <- predictors_b$TOP/TOP.index(point_b[1:4])[2]
+predictors$TOP <- predictors$TOP/TOP.index(point[1:4])[2]
 
 # the TOP index function generates a vert.txt file but we don't need that anymore
 if (file.exists('vert.txt')) {
@@ -92,36 +85,37 @@ if (file.exists('vert.txt')) {
 }
 
 
-
 # Species relative contribution -------------------------------------------
 
 # get an idea of species contributions to trait diversity metrics by doing an iterative take one out analysis
-spcont <- as.list(rep('', 7))
+spcont <- data.frame(Site = '', Species = '', TEve = '', TDiv = '')
+spcont <- list(spcont, spcont, spcont, spcont, spcont, spcont, spcont)
 # evenness and divergence first
-for (j in 1:ncol(abund_benth)) {
+for (j in 1:ncol(abund)) {
     # run a trait space without species j
-    dummydis <-  as.matrix(benth.dis)[-j,-j] %>% as.dist # because it's a symmetric matrix, we remove row and column j
+    dummydis <-  as.matrix(trait.dis)[-j,-j] %>% as.dist # because it's a symmetric matrix, we remove row and column j
     # doesn't rerun PCoA this way
-    traitspace_sp <- dbFD(dummydis, abund_benth[-j], w.abun=T, calc.FRic=T, calc.FDiv=T, m=4, calc.CWM=F, calc.FGR=F, print.pco=F)
+    traitspace_sp <- dbFD(dummydis, abund[-j], w.abun=T, calc.FRic=T, calc.FDiv=T, m=4, calc.CWM=F, calc.FGR=F, print.pco=F)
     for (i in 1:7) {
-      spcont[[i]] <- rbind(spcont[[i]], data.frame(Site = predictors_b$Site[i],
-                                                   Species=traits_benth$Species[j],
-                                                   TEve=predictors_b$TEve[i] - traitspace_sp$FEve[i], 
-                                                   TDiv=predictors_b$TDiv[i] - traitspace_sp$FDiv[i]))
+      spcont[[i]] <- rbind(spcont[[i]], data.frame(Site = predictors$Site[i],
+                                                   Species = traits$Species[j],
+                                                   TEve = predictors$TEve[i] - traitspace_sp$FEve[i], 
+                                                   TDiv = predictors$TDiv[i] - traitspace_sp$FDiv[i]))
     }
 }
 
-for (i in 1:7) {
+for (i in 1:7) { # get rid of the first blank row 
   spcont[[i]] <- spcont[[i]][-1,] %>% 
-    filter(Species %in% fishcomm_b$Species[which(fishcomm_b$Site == predictors_b$Site[i])])
+    filter(Species %in% fish_assemblage$Species[which(fish_assemblage$Site == predictors$Site[i])])
 }
 
+# now calculate contributions to TOP measures
 for (i in 1:7) {
   dTOP <- ''
   for (j in 1:nrow(s.point[[i]])) {
     dTOP <- c(dTOP, TOP.index(s.point[[i]][-j,-1])[2]) # calculate delta TOP for each species we take out
   }
-  spcont[[i]]$TOP <- predictors_b$TOP[i] - (as.numeric(dTOP[-1]) / TOP.index(point_b[1:4])[2]) # store the values into the spcont data frames
+  spcont[[i]]$TOP <- predictors$TOP[i] - (as.numeric(dTOP[-1]) / TOP.index(point[1:4])[2]) # store the values into the spcont data frames
 }
 
 sp_contr <- do.call(rbind, spcont)
@@ -135,58 +129,42 @@ if (file.exists('vert.txt')) {
   invisible(file.remove('vert.txt'))
 }
 
-predictors <- predictors_b
+# round the indices contributions
+sp_contr$TEve <- round(sp_contr$TEve, 5)
+sp_contr$TDiv <- round(sp_contr$TDiv, 5)
+sp_contr$TOP <- round(sp_contr$TOP, 5)
 
-
+# export
+# write.csv(sp_contr, 'outputs/sp_traitdiv_cont.csv', row.names = F)
 
 # Calculate relative abundances herbivore biters --------------------------
 
-# this doesn't change
 
 site.total <- data.frame(site.total=rowSums(abund), Site=rownames(abund))
-# also make separate trait tables for each site
-traits.sites <- as.list(rep('0', 7))
-for (i in 1:7) {
-  site.sp <- fish_assemblage %>% filter(Site == unique(fish_assemblage$Site)[i]) %>% ungroup() %>% select(Species)
-  # filter the tibble by each site and extract the species
-  traits.sites[[i]] <- as.data.frame(left_join(site.sp, as_tibble(traits), by='Species'))
-  # Use the site specific species list to match with the traits
-  rownames(traits.sites[[i]]) <- traits.sites[[i]]$Species # row names bc FD requires it
-  traits.sites[[i]][,1] <- NULL # Remove the Species column now that things are joined
-}
-names(traits.sites) <- unique(fish_assemblage$Site) # name list items by site
-rm(site.sp)
-traits.sites[[8]] <- traits[,-1]
-names(traits.sites)[8] <- 'all' # all sites again
-
+# reference vector of herbivore species
+herb_spp <- traits %>% filter(TrophParr == 'herb_mic') %>% pull(Species)
+site.herb <- fish_assemblage %>% filter(Species %in% herb_spp) # filter assemblage data by herbivores
+site.herb <- site.herb %>% group_by(Site) %>% summarise(Herb = sum(n)) %>% # add them all up
+  left_join(., site.total, by="Site") %>% 
+  mutate(Herb = Herb/site.total) %>% select(!site.total) # divide by total for rel abundance
 # herbivore abundance
-site.herb <- data.frame(Site=predictors$Site, Herb=rep(0,7))
-for (i in 1:7) {
-  herb <- as.data.frame(traits.sites[[i]])
-  herb$Species <- rownames(herb)
-  herb <-  herb %>% filter(TrophicGroup=='herbivore') %>% ungroup() %>% select(Species)
-  herb$Site <- names(traits.sites)[i]
-  herb <- left_join(herb, fish_assemblage, by=c('Site', 'Species')) %>% ungroup() %>% select(Site, Species, n)
-  site.herb$Herb[i] <- sum(herb$n)/site.total$site.total[i]
-}
 
 # biter abundance
-site.biter <- data.frame(Site=predictors$Site, Herb=rep(0,7))
-for (i in 1:7) {
-  biter <- as.data.frame(traits.sites[[i]])
-  biter$Species <- rownames(biter)
-  biter <-  biter %>% filter(ColumnFeed == 'benthic') %>% 
-    filter(str_detect(TrophicGroup, 'detritovore|invertivore|omnivore')) %>% ungroup() %>% select(Species)
-  biter$Site <- names(traits.sites)[i]
-  biter <- left_join(biter, fish_assemblage, by=c('Site', 'Species')) %>% ungroup() %>% select(Site, Species, n)
-  site.biter$Benthic[i] <- sum(biter$n)/site.total$site.total[i]
-}
+# just pull out the sessile invertivore species
+bite_spp <- traits %>% filter(str_detect(TrophParr, 'sess_inv')) %>% pull(Species)
+
+site.biter <- fish_assemblage %>% filter(Species %in% bite_spp) # only 4 sites, but we'll handle the zeroes later
+site.biter <- site.biter %>% 
+  group_by(Site) %>% summarise(Benthic = sum(n)) %>% # add them all up
+  left_join(., site.total, by="Site") %>% 
+  mutate(Benthic = Benthic/site.total) %>% select(!site.total) # divide by total for rel abundance
+site.biter$site.total <- NULL
+
 # add it to our predictors dataframe
 predictors$Herb <- site.herb$Herb
-predictors$Benthic <- site.biter$Benthic
+predictors <- left_join(predictors, site.biter, by="Site")
+predictors$Benthic[which(is.na(predictors$Benthic))] <- 0 # instead of NAs, I want zeroes
 
-predictors_b <- bind_cols(predictors_b, predictors[5:6])
 # clean up objects that aren't dependencies for downstream sourcing
-rm(herb, biter, site.biter, site.herb, traits.sites, abund)
-
-
+rm(herb, biter, site.biter, site.herb, traits.sites, 
+   abund, spcont, dummydis, traitspace_sp, dTOP) # remove these dummy temp objects

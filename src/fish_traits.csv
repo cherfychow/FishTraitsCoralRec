@@ -1,105 +1,105 @@
-,Species,TrophicGroup,DietPrimary,DietSecondary,ForageMode,FoodTroph,ColumnFeed,Schooling,Range,TrophicGroup
-Abudefduf whitleyi,Abudefduf whitleyi,planktivore,zooplankton,benthic algae,suction,2.64,pelagic,3,2,plank
-Acanthochromis polyacanthus,Acanthochromis polyacanthus,planktivore,zooplankton,benthic algae,suction,2.69,pelagic,2,1,plank
-Acanthurus blochii,Acanthurus blochii,herbivore,benthic algae,detritus,cropper,2,benthic,3,3,herb_mic_det
-Acanthurus nigricauda,Acanthurus nigricauda,herbivore,benthic algae,detritus,cropper,2.99,benthic,2,3,herb_mic_det
-Acanthurus nigrofuscus,Acanthurus nigrofuscus,herbivore,benthic algae,benthic algae,cropper,2,benthic,4,3,herb_mic_det
-Acanthurus olivaceus,Acanthurus olivaceus,detritovore,detritus,detritus,picking,2.26,benthic,3,3,herb_mic_det
-Amblyglyphidodon curacao,Amblyglyphidodon curacao,omnivore,benthic algae,macrobenthos,suction,3.099999905,pelagic,2,1,plank
-Balistoides viridescens,Balistoides viridescens,invertivore,b. crust.,mollusks,picking,3.33,benthic,1,2,macro_inv
-Bodianus axillaris,Bodianus axillaris,invertivore,mollusks,echinoderms,picking,3.42,benthic,2,2,macro_inv
-Caranx sexfasciatus,Caranx sexfasciatus,piscivore,fish,fish,active,3.58,pelagic,4,4,pisc
-Carcharhinus melanopterus,Carcharhinus melanopterus,piscivore,fish,cephalopods,active,4.33,pelagic,1,4,pisc
-Centropyge bicolor,Centropyge bicolor,herbivore,benthic algae,sponges,cropper,2.97,benthic,2,2,herb_mic_det
-Cephalopholis argus,Cephalopholis argus,piscivore,fish,fish,ambush,4.16,demersal,3,2,pisc
-Chaetodon auriga,Chaetodon auriga,omnivore,cnidarians,worms,picking,3.130000114,benthic,2,3,micro_inv
-Chaetodon baronessa,Chaetodon baronessa,corallivore,cnidarians,cnidarians,picking,3.34,benthic,1,2,cor
-Chaetodon citrinellus,Chaetodon citrinellus,omnivore,cnidarians,cnidarians,picking,2.98,benthic,2,2,cor
-Chaetodon ephippium,Chaetodon ephippium,omnivore,sponges,corals,picking,3.01,benthic,2,2,cor
-Chaetodon lineolatus,Chaetodon lineolatus,omnivore,cnidarians,cnidarians,picking,3.39,benthic,2,2,cor
-Chaetodon lunulatus,Chaetodon lunulatus,corallivore,cnidarians,cnidarians,picking,3.34,benthic,2,2,cor
-Chaetodon melannotus,Chaetodon melannotus,corallivore,cnidarians,cnidarians,picking,3.47,benthic,1,2,cor
-Chaetodon rafflesii,Chaetodon rafflesii,omnivore,cnidarians,worms,picking,3.4,benthic,2,2,micro_inv
-Chaetodon ulietensis,Chaetodon ulietensis,omnivore,cnidarians,cnidarians,picking,2.71,benthic,2,2,cor
-Chaetodon unimaculatus,Chaetodon unimaculatus,omnivore,cnidarians,cnidarians,picking,3.21,benthic,3,3,cor
-Chaetodon vagabundus,Chaetodon vagabundus,omnivore,cnidarians,worms,picking,2.9,benthic,2,2,cor
-Cheilinus chlorourus,Cheilinus chlorourus,invertivore,echinoderms,b. crust.,picking,3.46,demersal,2,2,crust
-Cheilinus fasciatus,Cheilinus fasciatus,invertivore,b. crust.,echni,active,3.37,demersal,1,2,macro_inv
-Cheilinus trilobatus,Cheilinus trilobatus,invertivore,mollusks,echinoderms,active,3.920000076,demersal,1,2,macro_inv
-Chlorurus microrhinos,Chlorurus microrhinos,herbivore,benthic algae,benthic algae,excavator,2.1,benthic,3,3,herb_mic_det
-Chlorurus spilurus,Chlorurus spilurus,herbivore,benthic algae,,excavator,2.6,benthic,2,2,herb_mic_det
-Chromis viridis,Chromis viridis,planktivore,zooplankton,macrobenthos,suction,2.5,pelagic,4,2,plank
-Chrysiptera caesifrons,Chrysiptera caesifrons,omnivore,,,picking,2.8,demersal,2,1,herb_mic_det
-Cirripectes stigmaticus,Cirripectes stigmaticus,herbivore,benthic algae,benthic algae,cropper,2,benthic,1,1,herb_mic_det
-Coris gaimard,Coris gaimard,invertivore,mollusks,macrobenthos,active,3.4,benthic,1,2,macro_inv
-Ctenochaetus striatus,Ctenochaetus striatus,detritovore,detritus,detritus,brushing,2,benthic,2,3,herb_mic_det
-Dascyllus aruanus,Dascyllus aruanus,planktivore,benthic algae,benthic algae,suction,3.349999905,demersal,3,1,plank
-Diagramma pictum,Diagramma pictum,invertivore,b. crust.,mollusks,active,3.39,benthic,2,3,macro_inv
-Dischistodus prosopotaenia,Dischistodus prosopotaenia,herbivore,benthic algae,detritus,farmer,2.7,benthic,2,2,herb_mic_det
-Dischistodus pseudochrysopoecilus,Dischistodus pseudochrysopoecilus,herbivore,benthic algae,benthic algae,farmer,2,benthic,2,1,herb_mic_det
-Epibulus insidiator,Epibulus insidiator,piscivore,b. crust.,fish,active,4.01,demersal,1,2,pisc
-Grammatorcynus bicarinatus,Grammatorcynus bicarinatus,piscivore,fish,fish,active,4.5,pelagic,4,4,pisc
-Halichoeres chloropterus,Halichoeres chloropterus,invertivore,b. crust.,macrobenthos,picking,3.37,benthic,1,2,macro_inv
-Halichoeres margaritaceus,Halichoeres margaritaceus,invertivore,b. crust.,macrobenthos,picking,3.66,benthic,1,2,crust
-Halichoeres marginatus,Halichoeres marginatus,invertivore,mollusks,worms,picking,3.2,benthic,1,2,micro_inv
-Halichoeres melanurus,Halichoeres melanurus,invertivore,mollusks,b. crust.,picking,2.9,benthic,1,2,micro_inv
-Halichoeres nebulosus,Halichoeres nebulosus,invertivore,mollusks,b. crust.,picking,3.3,benthic,1,2,macro_inv
-Hemigymnus melapterus,Hemigymnus melapterus,invertivore,macrobenthos,macrobenthos,picking,3.55,benthic,1,2,micro_inv
-Hipposcarus longiceps,Hipposcarus longiceps,herbivore,benthic algae,benthic algae,scraper,2.73,benthic,3,3,herb_mic_det
-Labrichthys unilineatus,Labrichthys unilineatus,corallivore,cnidarians,cnidarians,picking,3.34,benthic,2,2,cor
-Labroides dimidiatus,Labroides dimidiatus,cleaner,macrobenthos,macrobenthos,cleaner,3.85,pelagic,1,2,plank
-Lethrinus atkinsoni,Lethrinus atkinsoni,invertivore,echinoderms,mollusks,active,3.51,demersal,2,4,macro_inv
-Lethrinus lentjan,Lethrinus lentjan,piscivore,b. crust.,cephalopods,active,3.869999886,demersal,1,4,crust
-Lethrinus nebulosus,Lethrinus nebulosus,invertivore,fish,macrobenthos,picking,3.640000105,demersal,2,4,macro_inv
-Lethrinus ornatus,Lethrinus ornatus,invertivore,b. crust.,echinoderms,picking,3.369999886,demersal,2,3,macro_inv
-Lutjanus bohar,Lutjanus bohar,piscivore,fish,mollusks,active,3.619999886,demersal,1,4,pisc
-Lutjanus carponotatus,Lutjanus carponotatus,piscivore,b. crust.,b. crust.,active,4.02,demersal,4,4,crust
-Lutjanus fulviflamma,Lutjanus fulviflamma,piscivore,b. crust.,b. crust.,active,3.85,demersal,4,4,crust
-Lutjanus gibbus,Lutjanus gibbus,invertivore,fish,cephalopods,picking,3.630000114,demersal,3,2,micro_inv
-Macropharyngodon meleagris,Macropharyngodon meleagris,invertivore,meiobenthos,detritus,picking,3.1,benthic,1,2,herb_mic_det
-Macropharyngodon negrosensis,Macropharyngodon negrosensis,invertivore,,,picking,3.5,benthic,3,2,NA
-Naso brevirostris,Naso brevirostris,herbivore,benthic algae,benthic algae,cropper,2.22,benthic,3,3,NA
-Naso lituratus,Naso lituratus,herbivore,benthic algae,zooplankton,browser,2.32,benthic,3,3,herb_mic_det
-Naso unicornis,Naso unicornis,herbivore,benthic algae,zooplankton,browser,2.17,benthic,3,3,herb_mic_det
-Neoglyphidodon melas,Neoglyphidodon melas,omnivore,cnidarians,benthic algae,picking,3.02,benthic,2,1,plank
-Novaculichthys taeniourus,Novaculichthys taeniourus,invertivore,mollusks,echinoderms,active,3.25,benthic,2,2,NA
-Parupeneus barberinus,Parupeneus barberinus,invertivore,b. crust.,worms,brushing,3.44,benthic,2,2,micro_inv
-Parupeneus cyclostomus,Parupeneus cyclostomus,piscivore,fish,b. crust.,active,4.08,benthic,1,2,pisc
-Parupeneus multifasciatus,Parupeneus multifasciatus,invertivore,b. crust.,b. crust.,brushing,3.61,benthic,3,3,crust
-Plectropomus leopardus,Plectropomus leopardus,piscivore,fish,fish,active,4.41,demersal,1,2,pisc
-Pomacanthus sexstriatus,Pomacanthus sexstriatus,omnivore,sponges,benthic algae,picking,2.63,benthic,2,3,NA
-Pomacentrus chrysurus,Pomacentrus chrysurus,omnivore,benthic algae,macrobenthos,picking,2.64,benthic,2,1,herb_mic_det
-Pomacentrus coelestis,Pomacentrus coelestis,omnivore,benthic algae,worms,picking,3.18,demersal,3,2,NA
-Pomacentrus grammorhynchus,Pomacentrus grammorhynchus,herbivore,benthic algae,meiobenthos,farmer,2.72,demersal,2,1,NA
-Pomacentrus moluccensis,Pomacentrus moluccensis,omnivore,benthic algae,benthic algae,picking,2.47,demersal,3,1,plank
-Pomacentrus wardi,Pomacentrus wardi,herbivore,benthic algae,benthic algae,farmer,2,benthic,2,1,NA
-Scarus altipinnis,Scarus altipinnis,herbivore,benthic algae,benthic algae,scraper,2,benthic,4,3,NA
-Scarus chameleon,Scarus chameleon,herbivore,benthic algae,benthic algae,scraper,2,benthic,3,3,NA
-Scarus flavipectoralis,Scarus flavipectoralis,herbivore,benthic algae,benthic algae,scraper,2,benthic,1,3,NA
-Scarus frenatus,Scarus frenatus,herbivore,benthic algae,benthic algae,scraper,2,benthic,2,3,NA
-Scarus globiceps,Scarus globiceps,herbivore,benthic algae,benthic algae,scraper,2,benthic,1,3,NA
-Scarus niger,Scarus niger,herbivore,benthic algae,benthic algae,scraper,2,benthic,1,2,NA
-Scarus psittacus,Scarus psittacus,herbivore,benthic algae,benthic algae,scraper,2,benthic,3,3,herb_mic_det
-Scarus rivulatus,Scarus rivulatus,herbivore,benthic algae,cnidarians,scraper,2.71,benthic,4,3,NA
-Scarus rubroviolaceus,Scarus rubroviolaceus,herbivore,benthic algae,benthic algae,scraper,2,benthic,2,3,NA
-Scarus schlegeli,Scarus schlegeli,herbivore,benthic algae,benthic algae,scraper,2.75,benthic,1,3,NA
-Scolopsis bilineata,Scolopsis bilineata,invertivore,b. crust.,mollusks,active,3.62,demersal,2,2,crust
-Siganus argenteus,Siganus argenteus,herbivore,benthic algae,benthic algae,cropper,2.630000114,benthic,4,4,herb_mic_det
-Siganus corallinus,Siganus corallinus,herbivore,benthic algae,benthic algae,cropper,2.46,benthic,2,2,herb_mic_det
-Siganus doliatus,Siganus doliatus,herbivore,benthic algae,benthic algae,cropper,2,benthic,2,2,herb_mic_det
-Siganus puellus,Siganus puellus,herbivore,benthic algae,sponges,cropper,3,benthic,2,2,herb_mic_det
-Siganus punctatissimus,Siganus punctatissimus,herbivore,benthic algae,benthic algae,cropper,2,benthic,2,2,herb_mic_det
-Siganus punctatus,Siganus punctatus,herbivore,benthic algae,benthic algae,cropper,2,benthic,2,2,herb_mic_det
-Siganus vulpinus,Siganus vulpinus,herbivore,benthic algae,macrobenthos,cropper,2.68,benthic,2,2,herb_mic_det
-Stegastes apicalis,Stegastes apicalis,herbivore,benthic algae,benthic algae,farmer,2.38,benthic,2,1,herb_mic_det
-Stethojulis bandanensis,Stethojulis bandanensis,invertivore,b. crust.,b. crust.,active,3.31,demersal,2,2,micro_inv
-Stethojulis trilineata,Stethojulis trilineata,invertivore,b. crust.,b. crust.,active,3.2,demersal,3,2,micro_inv
-Sufflamen chrysopterum,Sufflamen chrysopterum,omnivore,meiobenthos,meiobenthos,picking,3.45,benthic,1,1,micro_inv
-Taeniurops meyeni,Taeniurops meyeni,piscivore,fish,mollusks,active,4.2,demersal,1,2,pisc
-Thalassoma hardwicke,Thalassoma hardwicke,invertivore,b. crust.,b. crust.,picking,3.5,benthic,3,2,micro_inv
-Thalassoma lunare,Thalassoma lunare,invertivore,b. crust.,b. crust.,picking,3.5,benthic,2,2,plank
-Thalassoma lutescens,Thalassoma lutescens,invertivore,b. crust.,b. crust.,picking,3.7,benthic,3,3,macro_inv
-Thalassoma nigrofasciatum,Thalassoma nigrofasciatum,invertivore,macrobenthos,macrobenthos,picking,3.23,demersal,3,2,macro_inv
-Uraspis uraspis,Uraspis uraspis,piscivore,cephalopods,b. crust.,active,4.07,pelagic,2,4,pisc
-Zanclus cornutus,Zanclus cornutus,omnivore,sponges,sponges,picking,2.49,demersal,2,2,sess_inv
-Zebrasoma scopas,Zebrasoma scopas,herbivore,benthic algae,benthic algae,cropper,2,benthic,3,2,herb_mic_det
+Species,ForageMode,FoodTroph,ColumnFeed,Schooling,Range,TrophParr
+Abudefduf whitleyi,suction,2.64,pelagic,3,2,plank
+Acanthochromis polyacanthus,suction,2.69,pelagic,2,1,plank
+Acanthurus blochii,cropper,2,benthic,3,3,herb_mic
+Acanthurus nigricauda,cropper,2.99,benthic,2,3,herb_mic
+Acanthurus nigrofuscus,cropper,2,benthic,4,3,herb_mic
+Acanthurus olivaceus,picking,2.26,benthic,3,3,det
+Amblyglyphidodon curacao,suction,3.099999905,pelagic,2,1,plank
+Balistoides viridescens,picking,3.33,benthic,1,2,macro_inv
+Bodianus axillaris,picking,3.42,benthic,2,2,macro_inv
+Caranx sexfasciatus,active,3.58,pelagic,4,4,pisc
+Carcharhinus melanopterus,active,4.33,pelagic,1,4,pisc
+Centropyge bicolor,cropper,2.97,benthic,2,2,sess_inv
+Cephalopholis argus,ambush,4.16,demersal,3,2,pisc
+Chaetodon auriga,picking,3.130000114,benthic,2,3,micro_inv
+Chaetodon baronessa,picking,3.34,benthic,1,2,cor
+Chaetodon citrinellus,picking,2.98,benthic,2,2,cor
+Chaetodon ephippium,picking,3.01,benthic,2,2,cor
+Chaetodon lineolatus,picking,3.39,benthic,2,2,cor
+Chaetodon lunulatus,picking,3.34,benthic,2,2,cor
+Chaetodon melannotus,picking,3.47,benthic,1,2,cor
+Chaetodon rafflesii,picking,3.4,benthic,2,2,micro_inv
+Chaetodon ulietensis,picking,2.71,benthic,2,2,cor
+Chaetodon unimaculatus,picking,3.21,benthic,3,3,cor
+Chaetodon vagabundus,picking,2.9,benthic,2,2,cor
+Cheilinus chlorourus,picking,3.46,demersal,2,2,crust
+Cheilinus fasciatus,active,3.37,demersal,1,2,macro_inv
+Cheilinus trilobatus,active,3.920000076,demersal,1,2,macro_inv
+Chlorurus microrhinos,excavator,2.1,benthic,3,3,herb_mic
+Chlorurus spilurus,excavator,2.6,benthic,2,2,herb_mic
+Chromis viridis,suction,2.5,pelagic,4,2,plank
+Chrysiptera caesifrons,picking,2.8,demersal,2,1,herb_mic
+Cirripectes stigmaticus,cropper,2,benthic,1,1,herb_mic
+Coris gaimard,active,3.4,benthic,1,2,macro_inv
+Ctenochaetus striatus,brushing,2,benthic,2,3,det
+Dascyllus aruanus,suction,3.349999905,demersal,3,1,plank
+Diagramma pictum,active,3.39,benthic,2,3,macro_inv
+Dischistodus prosopotaenia,farmer,2.7,benthic,2,2,herb_mic
+Dischistodus pseudochrysopoecilus,farmer,2,benthic,2,1,herb_mic
+Epibulus insidiator,active,4.01,demersal,1,2,pisc
+Grammatorcynus bicarinatus,active,4.5,pelagic,4,4,pisc
+Halichoeres chloropterus,picking,3.37,benthic,1,2,macro_inv
+Halichoeres margaritaceus,picking,3.66,benthic,1,2,crust
+Halichoeres marginatus,picking,3.2,benthic,1,2,micro_inv
+Halichoeres melanurus,picking,2.9,benthic,1,2,micro_inv
+Halichoeres nebulosus,picking,3.3,benthic,1,2,macro_inv
+Hemigymnus melapterus,picking,3.55,benthic,1,2,micro_inv
+Hipposcarus longiceps,scraper,2.73,benthic,3,3,herb_mic
+Labrichthys unilineatus,picking,3.34,benthic,2,2,cor
+Labroides dimidiatus,cleaner,3.85,pelagic,1,2,plank
+Lethrinus atkinsoni,active,3.51,demersal,2,4,macro_inv
+Lethrinus lentjan,active,3.869999886,demersal,1,4,crust
+Lethrinus nebulosus,picking,3.640000105,demersal,2,4,macro_inv
+Lethrinus ornatus,picking,3.369999886,demersal,2,3,macro_inv
+Lutjanus bohar,active,3.619999886,demersal,1,4,pisc
+Lutjanus carponotatus,active,4.02,demersal,4,4,crust
+Lutjanus fulviflamma,active,3.85,demersal,4,4,crust
+Lutjanus gibbus,picking,3.630000114,demersal,3,2,micro_inv
+Macropharyngodon meleagris,picking,3.1,benthic,1,2,herb_mic
+Macropharyngodon negrosensis,picking,3.5,benthic,3,2,macro_inv
+Naso brevirostris,cropper,2.22,benthic,3,3,herb_mic
+Naso lituratus,browser,2.32,benthic,3,3,herb_mic
+Naso unicornis,browser,2.17,benthic,3,3,herb_mic
+Neoglyphidodon melas,picking,3.02,benthic,2,1,plank
+Novaculichthys taeniourus,active,3.25,benthic,2,2,macro_inv
+Parupeneus barberinus,brushing,3.44,benthic,2,2,micro_inv
+Parupeneus cyclostomus,active,4.08,benthic,1,2,pisc
+Parupeneus multifasciatus,brushing,3.61,benthic,3,3,crust
+Plectropomus leopardus,active,4.41,demersal,1,2,pisc
+Pomacanthus sexstriatus,picking,2.63,benthic,2,3,sess_inv
+Pomacentrus chrysurus,picking,2.64,benthic,2,1,herb_mic
+Pomacentrus coelestis,picking,3.18,demersal,3,2,micro_inv
+Pomacentrus grammorhynchus,farmer,2.72,demersal,2,1,herb_mic
+Pomacentrus moluccensis,picking,2.47,demersal,3,1,plank
+Pomacentrus wardi,farmer,2,benthic,2,1,herb_mic
+Scarus altipinnis,scraper,2,benthic,4,3,herb_mic
+Scarus chameleon,scraper,2,benthic,3,3,herb_mic
+Scarus flavipectoralis,scraper,2,benthic,1,3,herb_mic
+Scarus frenatus,scraper,2,benthic,2,3,herb_mic
+Scarus globiceps,scraper,2,benthic,1,3,herb_mic
+Scarus niger,scraper,2,benthic,1,2,herb_mic
+Scarus psittacus,scraper,2,benthic,3,3,herb_mic
+Scarus rivulatus,scraper,2.71,benthic,4,3,herb_mic
+Scarus rubroviolaceus,scraper,2,benthic,2,3,herb_mic
+Scarus schlegeli,scraper,2.75,benthic,1,3,herb_mic
+Scolopsis bilineata,active,3.62,demersal,2,2,crust
+Siganus argenteus,cropper,2.630000114,benthic,4,4,herb_mic
+Siganus corallinus,cropper,2.46,benthic,2,2,herb_mic
+Siganus doliatus,cropper,2,benthic,2,2,herb_mic
+Siganus puellus,cropper,3,benthic,2,2,sess_inv
+Siganus punctatissimus,cropper,2,benthic,2,2,herb_mic
+Siganus punctatus,cropper,2,benthic,2,2,herb_mic
+Siganus vulpinus,cropper,2.68,benthic,2,2,herb_mic
+Stegastes apicalis,farmer,2.38,benthic,2,1,herb_mic
+Stethojulis bandanensis,active,3.31,demersal,2,2,micro_inv
+Stethojulis trilineata,active,3.2,demersal,3,2,micro_inv
+Sufflamen chrysopterum,picking,3.45,benthic,1,1,micro_inv
+Taeniurops meyeni,active,4.2,demersal,1,2,pisc
+Thalassoma hardwicke,picking,3.5,benthic,3,2,micro_inv
+Thalassoma lunare,picking,3.5,benthic,2,2,plank
+Thalassoma lutescens,picking,3.7,benthic,3,3,macro_inv
+Thalassoma nigrofasciatum,picking,3.23,demersal,3,2,macro_inv
+Uraspis uraspis,active,4.07,pelagic,2,4,pisc
+Zanclus cornutus,picking,2.49,demersal,2,2,sess_inv
+Zebrasoma scopas,cropper,2,benthic,3,2,herb_mic

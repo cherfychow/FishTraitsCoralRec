@@ -20,6 +20,9 @@ set.seed(24)
 settlement.18 <- read_xlsx('./src/coral_settlement.xlsx', sheet='Sheet1', col_names=T)
 str(settlement.18)
 
+
+# Data prep ---------------------------------------------------------------
+
 # select just the 7 study sites and their spat data from 2018
 settlement.18 <- settlement.18 %>% group_by(year, site) %>% 
   filter(site %in% c('corner_beach', 'lagoon_1', 'resort', 'southeast', 'turtle_beach', 'vickies', 'north_reef_2'), year=='2018-19')
@@ -65,9 +68,27 @@ rec_global <- glmer.nb(data=RecruitData,
                        Recruits ~ Spat2018 + ForRate + TEve + TDiv + TOP + Herb + Benthic + (1|Site), na.action = 'na.fail')
 # use dredge to run model selection with all possible predictor combinations (with site fixed)
 rec.select <- dredge(rec_global, beta = 'none', evaluate = T, rank = 'AICc', fixed = c('Spat2018', 'ForRate', 'Site'))
-# sett.select2 <- dredge(sett_global, beta = 'none', evaluate = T, rank = 'BIC', fixed = 'Site')
 rec.select
+
+## custom model selection table with deviance
+top10 <- get.models(rec.select, 1:10)
+summary.rec <- data.frame(ModelRank=1:10) # just top 10 candidates
+for (i in 1:10) {
+  summary.rec$nTerms[i] <- getAllTerms(top10[[i]], intercept = F) %>% length
+  summary.rec$AICc[i] <- round(MuMIn::AICc(top10[[i]]), 2)
+  summary.rec$BIC[i] <- round(BIC(top10[[i]]), 2)
+  summary.rec$dev[i] <- round(summary(top10[[i]])$AIC[4], 2)
+  summary.rec$Dispersion[i] <- round(summary(top10[[i]])$AIC[4] / df.residual(top10[[i]]), 2)
+}
+summary.rec <- summary.rec %>% arrange(AICc, BIC)
+summary.rec$wAIC <- round(MuMIn::Weights(summary.rec$AICc), 3)
+summary.rec$dAIC <- summary.rec$AICc - summary.rec$AICc[1] %>% round(., 3)
+summary.rec$dBIC <- summary.rec$BIC - summary.rec$BIC[1] %>% round(., 3)
+print(summary.rec)
+
+
 recr <- get.models(rec.select, 1)[[1]] # print results for top model
+# selected most parsimonious
 
 # Final model diagnostics --------------------------------------------
 
@@ -83,3 +104,15 @@ abline(h=0, lty=2)
 qqnorm(residuals(recr, type='deviance'))
 qqline(residuals(recr, type='deviance'))
 par(mfrow=c(1,1))
+
+# save model outputs
+sink(file = 'outputs/recruitment_model.txt', append = F) # start file sink
+
+## RECRUITMENT MODEL SELECTION
+print(rec.select)
+print(summary.rec)
+
+## RECRUITMENT SETTLEMENT MODEL
+summary(recr)
+
+sink() # reset back to normal
