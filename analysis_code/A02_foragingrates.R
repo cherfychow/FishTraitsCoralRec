@@ -67,5 +67,5 @@ predictors$ForRate <- left_join(ForRate, sp.inf, by='Species') %>%
   summarise(ForRate=sum(SpFeed)) %>% ungroup() %>% pull(ForRate) %>% as.vector
 predictors$ForRate <- scale(predictors$ForRate, scale=T, center=F)
 
-rm(BiteSp, length.convert, sp.inf, influence, inf.pca)
+rm(BiteSp, length.convert, influence, inf.pca)
 # remove these objects since they're not dependencies for downstream sourcing

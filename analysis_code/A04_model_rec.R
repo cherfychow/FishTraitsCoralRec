@@ -113,6 +113,6 @@ print(rec.select)
 print(summary.rec)
 
 ## RECRUITMENT SETTLEMENT MODEL
-summary(recr)
+print(summary(recr))
 
 sink() # reset back to normal

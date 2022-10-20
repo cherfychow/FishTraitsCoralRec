@@ -14,7 +14,9 @@
 # Herb = Relative herbivore abundance
 # Benthic = Relative benthic biter abundance
 
-require(tidyverse)
+require(dplyr)
+require(tidyr)
+require(ggplot2)
 require(lme4)
 require(MuMIn)
 require(performance)
@@ -98,6 +100,6 @@ print(sett.select)
 print(summary.sett)
 
 ## SELECTED SETTLEMENT MODEL
-summary(sett)
+print(summary(sett))
 
 sink()
