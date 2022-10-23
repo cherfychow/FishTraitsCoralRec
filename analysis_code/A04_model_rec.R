@@ -72,13 +72,19 @@ rec.select
 
 ## custom model selection table with deviance
 top10 <- get.models(rec.select, 1:10)
-summary.rec <- data.frame(ModelRank=1:10) # just top 10 candidates
-for (i in 1:10) {
+# add null models for comparison
+top10[[11]] <- glmer.nb(data=RecruitData, 
+                       Recruits ~ Spat2018 + (1|Site), na.action = 'na.fail')
+top10[[12]] <- glmer.nb(data=RecruitData, 
+                       Recruits ~ (1|Site), na.action = 'na.fail')
+summary.rec <- data.frame(ModelRank=1:12) # just top 10 candidates
+for (i in 1:12) {
   summary.rec$nTerms[i] <- getAllTerms(top10[[i]], intercept = F) %>% length
   summary.rec$AICc[i] <- round(MuMIn::AICc(top10[[i]]), 2)
   summary.rec$BIC[i] <- round(BIC(top10[[i]]), 2)
   summary.rec$dev[i] <- round(summary(top10[[i]])$AIC[4], 2)
   summary.rec$Dispersion[i] <- round(summary(top10[[i]])$AIC[4] / df.residual(top10[[i]]), 2)
+  summary.rec$mR2[i] <- r.squaredGLMM(top10[[i]]) %>% round(., 3)
 }
 summary.rec <- summary.rec %>% arrange(AICc, BIC)
 summary.rec$wAIC <- round(MuMIn::Weights(summary.rec$AICc), 3)

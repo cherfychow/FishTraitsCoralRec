@@ -61,18 +61,22 @@ sett.select # selection table
 ## Custom selection table
 ## Model comparison summary
 top10 <- get.models(sett.select, 1:10)
-summary.sett <- data.frame(ModelRank=1:10) # just top 10 candidates
-for (i in 1:10) {
+top10[[11]] <- glmer.nb(data=SpatData, 
+                        Spat ~ (1|Site), na.action = 'na.fail')
+summary.sett <- data.frame(ModelRank=1:11) # just top 10 candidates
+for (i in 1:11) {
   summary.sett$nTerms[i] <- getAllTerms(top10[[i]], intercept = F) %>% length
   summary.sett$AICc[i] <- round(MuMIn::AICc(top10[[i]]), 2)
   summary.sett$BIC[i] <- round(BIC(top10[[i]]), 2)
   summary.sett$dev[i] <- round(summary(top10[[i]])$AIC[4], 2)
   summary.sett$Dispersion[i] <- round(summary(top10[[i]])$AIC[4] / df.residual(top10[[i]]), 2)
+  summary.sett$mR2[i] <- r.squaredGLMM(top10[[i]])
 }
 summary.sett <- summary.sett %>% arrange(AICc, BIC)
 summary.sett$wAIC <- round(MuMIn::Weights(summary.sett$AICc), 3)
 summary.sett$dAIC <- summary.sett$AICc - summary.sett$AICc[1] %>% round(., 3)
 summary.sett$dBIC <- summary.sett$BIC - summary.sett$BIC[1] %>% round(., 3)
+summary.sett$mR2 <- round(summary.sett$mR2, 3)
 print(summary.sett)
 
 # SELECT MODEL
