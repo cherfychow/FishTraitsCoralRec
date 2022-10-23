@@ -84,6 +84,33 @@ if (file.exists('vert.txt')) {
   invisible(file.remove('vert.txt'))
 }
 
+# Calculate relative abundances herbivore biters --------------------------
+
+
+site.total <- data.frame(site.total=rowSums(abund), Site=rownames(abund))
+# reference vector of herbivore species
+herb_spp <- traits %>% filter(TrophParr == 'herb_mic') %>% pull(Species)
+site.herb <- fish_assemblage %>% filter(Species %in% herb_spp) # filter assemblage data by herbivores
+site.herb <- site.herb %>% group_by(Site) %>% summarise(Herb = sum(n)) %>% # add them all up
+  left_join(., site.total, by="Site") %>% 
+  mutate(Herb = Herb/site.total) %>% select(!site.total) # divide by total for rel abundance
+# herbivore abundance
+
+# biter abundance
+# just pull out the sessile invertivore species
+bite_spp <- traits %>% filter(str_detect(TrophParr, 'sess_inv')) %>% pull(Species)
+
+site.biter <- fish_assemblage %>% filter(Species %in% bite_spp) # only 4 sites, but we'll handle the zeroes later
+site.biter <- site.biter %>% 
+  group_by(Site) %>% summarise(Benthic = sum(n)) %>% # add them all up
+  left_join(., site.total, by="Site") %>% 
+  mutate(Benthic = Benthic/site.total) %>% select(!site.total) # divide by total for rel abundance
+site.biter$site.total <- NULL
+
+# add it to our predictors dataframe
+predictors$Herb <- site.herb$Herb
+predictors <- left_join(predictors, site.biter, by="Site")
+predictors$Benthic[which(is.na(predictors$Benthic))] <- 0 # instead of NAs, I want zeroes
 
 # Species relative contribution -------------------------------------------
 
@@ -92,16 +119,16 @@ spcont <- data.frame(Site = '', Species = '', TEve = '', TDiv = '')
 spcont <- list(spcont, spcont, spcont, spcont, spcont, spcont, spcont)
 # evenness and divergence first
 for (j in 1:ncol(abund)) {
-    # run a trait space without species j
-    dummydis <-  as.matrix(trait.dis)[-j,-j] %>% as.dist # because it's a symmetric matrix, we remove row and column j
-    # doesn't rerun PCoA this way
-    traitspace_sp <- dbFD(dummydis, abund[-j], w.abun=T, calc.FRic=T, calc.FDiv=T, m=4, calc.CWM=F, calc.FGR=F, print.pco=F)
-    for (i in 1:7) {
-      spcont[[i]] <- rbind(spcont[[i]], data.frame(Site = predictors$Site[i],
-                                                   Species = traits$Species[j],
-                                                   TEve = predictors$TEve[i] - traitspace_sp$FEve[i], 
-                                                   TDiv = predictors$TDiv[i] - traitspace_sp$FDiv[i]))
-    }
+  # run a trait space without species j
+  dummydis <-  as.matrix(trait.dis)[-j,-j] %>% as.dist # because it's a symmetric matrix, we remove row and column j
+  # doesn't rerun PCoA this way
+  traitspace_sp <- dbFD(dummydis, abund[-j], w.abun=T, calc.FRic=T, calc.FDiv=T, m=4, calc.CWM=F, calc.FGR=F, print.pco=F)
+  for (i in 1:7) {
+    spcont[[i]] <- rbind(spcont[[i]], data.frame(Site = predictors$Site[i],
+                                                 Species = traits$Species[j],
+                                                 TEve = predictors$TEve[i] - traitspace_sp$FEve[i], 
+                                                 TDiv = predictors$TDiv[i] - traitspace_sp$FDiv[i]))
+  }
 }
 
 for (i in 1:7) { # get rid of the first blank row 
@@ -133,38 +160,15 @@ if (file.exists('vert.txt')) {
 sp_contr$TEve <- round(sp_contr$TEve, 5)
 sp_contr$TDiv <- round(sp_contr$TDiv, 5)
 sp_contr$TOP <- round(sp_contr$TOP, 5)
+sp_contr <- left_join(sp_contr, predictors[1:4], by="Site")
+sp_contr_rel <- sp_contr %>% mutate(dTOP = TOP.x / TOP.y, 
+                                    dTEve = TEve.x / TEve.y, 
+                                    dTDiv = TDiv.x / TDiv.y) %>% 
+  select(Species, Site, dTOP, dTEve, dTDiv) %>% arrange(Site, desc(dTDiv))# make it relative 
 
 # export
 # write.csv(sp_contr, 'outputs/sp_traitdiv_cont.csv', row.names = F)
 
-# Calculate relative abundances herbivore biters --------------------------
-
-
-site.total <- data.frame(site.total=rowSums(abund), Site=rownames(abund))
-# reference vector of herbivore species
-herb_spp <- traits %>% filter(TrophParr == 'herb_mic') %>% pull(Species)
-site.herb <- fish_assemblage %>% filter(Species %in% herb_spp) # filter assemblage data by herbivores
-site.herb <- site.herb %>% group_by(Site) %>% summarise(Herb = sum(n)) %>% # add them all up
-  left_join(., site.total, by="Site") %>% 
-  mutate(Herb = Herb/site.total) %>% select(!site.total) # divide by total for rel abundance
-# herbivore abundance
-
-# biter abundance
-# just pull out the sessile invertivore species
-bite_spp <- traits %>% filter(str_detect(TrophParr, 'sess_inv')) %>% pull(Species)
-
-site.biter <- fish_assemblage %>% filter(Species %in% bite_spp) # only 4 sites, but we'll handle the zeroes later
-site.biter <- site.biter %>% 
-  group_by(Site) %>% summarise(Benthic = sum(n)) %>% # add them all up
-  left_join(., site.total, by="Site") %>% 
-  mutate(Benthic = Benthic/site.total) %>% select(!site.total) # divide by total for rel abundance
-site.biter$site.total <- NULL
-
-# add it to our predictors dataframe
-predictors$Herb <- site.herb$Herb
-predictors <- left_join(predictors, site.biter, by="Site")
-predictors$Benthic[which(is.na(predictors$Benthic))] <- 0 # instead of NAs, I want zeroes
-
 # clean up objects that aren't dependencies for downstream sourcing
-rm(herb, biter, site.biter, site.herb, traits.sites, 
+rm(herb_spp, bite_spp, site.biter, site.herb,
    abund, spcont, dummydis, traitspace_sp, dTOP) # remove these dummy temp objects

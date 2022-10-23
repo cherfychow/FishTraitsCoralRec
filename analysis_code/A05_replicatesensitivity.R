@@ -1,7 +1,7 @@
 
 # FishTraitsCoralRec
 # RUV sensitivity analysis
-# Assemblage sampling sensitivity
+# Assemblage sampling sensitivity, includes plotting code
 
 
 # Setup and data clean--------------------------------------------------------
@@ -150,6 +150,10 @@ if (file.exists('vert.txt')) {
 
 ## Calculate relative abundances herbivore biters --------------------------
 
+# restart R, not sure why package interactions break dplyr
+require(dplyr)
+require(stringr)
+
 # reference vector of herbivore species
 herb_spp <- traits2 %>% filter(TrophParr == 'herb_mic') %>% pull(Species)
 site.herb <- fish.ruv %>% filter(Species %in% herb_spp) # filter assemblage data by herbivores
@@ -160,7 +164,7 @@ site.herb <- site.herb %>% group_by(Site) %>% summarise(Herb = sum(n)) %>% # add
 
 # biter abundance
 # just pull out the sessile invertivore species
-bite_spp <- traits %>% filter(str_detect(TrophParr, 'sess_inv')) %>% pull(Species)
+bite_spp <- traits %>% filter(TrophParr == 'sess_inv') %>% pull(Species)
 site.biter <- fish.ruv %>% filter(Species %in% bite_spp) # filter assemblage data by herbivores
 site.biter <- site.biter %>% group_by(Site) %>% summarise(Benthic = sum(n)) %>% # add them all up
   left_join(., site.n, by="Site") %>% 
@@ -172,7 +176,7 @@ predictors <- left_join(predictors, site.biter, by="Site")
 predictors$Benthic[which(is.na(predictors$Benthic))] <- 0 # because some sites could have none, the NAs need to be zeroes
 
 # clean up objects that aren't dependencies for downstream sourcing
-rm(herb_spp, biter_spp, site.biter, site.herb, abund)
+rm(herb_spp, bite_spp, site.biter, site.herb, abund)
 
 ## Visualise trait space 2 only --------------------------
 
@@ -190,9 +194,9 @@ hull.v2 <- convhull.vert(tr.point[,3:4])
 palette <- viridis::viridis(n=3, end=0.95, begin=0.1, alpha=0.7, option="mako")
 titles <- c('North Reef', 'Southeast', 'Turtle Beach')
 looks <- theme_bw(base_size=12) + theme(panel.grid = element_blank())
+palette2 <- c('#5A0C30', '#8E1C70', '#9266BC') # for the secondary data
 
 # object for total fishes in each site
-
 
 for (i in 1:3) {
   # Now that the base layers are done, I'll plot each site's points and hulls on
@@ -216,9 +220,9 @@ for (i in 1:3) {
   s.space[[1]] <- ggplot() + looks +
     geom_polygon(data=hull.v, aes(x=A1, y=A2), color='grey', fill='white') +
     labs(x='PCo1', y='PCo2', title=titles[i]) +
-    geom_polygon(data=s.hull.v, aes(x=A1, y=A2), fill=palette[i], alpha=0.25) +
+    geom_polygon(data=s.hull.v, aes(x=A1, y=A2), fill=palette2[i], alpha=0.25) +
     geom_point(data=pointS %>% left_join(., traits2, by="Species"),
-               aes(x=A1, y=A2, size=n), fill=palette[i], color='#666666', shape=21) +
+               aes(x=A1, y=A2, size=n), fill=palette2[i], color='#666666', shape=21) +
     geom_text_repel(data=pointS %>% arrange(n) %>% top_n(5), aes(label=ShortSp, x=A1, y=A2), force=2,
                     size=2.8, fontface='italic', min.segment.length = 0, point.size=5,
                     max.overlaps = Inf, box.padding = 1, force_pull=0.1) +
@@ -231,9 +235,9 @@ for (i in 1:3) {
   s.space[[2]] <- ggplot() + looks +
     geom_polygon(data=hull.v2, aes(x=A3, y=A4), color='grey', fill='white') +
     labs(x='PCo3', y='PCo4') +
-    geom_polygon(data=s.hull.v2, aes(x=A3, y=A4), fill=palette[i], alpha=0.25) +
+    geom_polygon(data=s.hull.v2, aes(x=A3, y=A4), fill=palette2[i], alpha=0.25) +
     geom_point(data=pointS %>% left_join(., traits2, by="Species"), 
-               aes(x=A3, y=A4, size=n), fill=palette[i], color='#666666', shape=21) +
+               aes(x=A3, y=A4, size=n), fill=palette2[i], color='#666666', shape=21) +
     geom_text_repel(data=pointS %>% arrange(n) %>% top_n(5), aes(label=ShortSp, x=A3, y=A4), force=2,
                     size=2.8, fontface='italic', min.segment.length = 0, point.size=5,
                     max.overlaps = Inf, box.padding = 1, force_pull=0.1) +
@@ -260,25 +264,25 @@ global2 <- ggplot() + looks +
   labs(x='PCo3', y='PCo4') + theme(legend.title=element_blank()) +
   scale_fill_grey(aesthetics="color", start=0.2, end=0.7) + scale_shape_manual(values=c(1:6,21:25), guide="none")
 
-pred_long <- predictors %>% pivot_longer(cols=!Site, names_to="predictor", values_to="value")
+pred_long <- predictors %>% tidyr::pivot_longer(cols=!Site, names_to="predictor", values_to="value")
 
 FD_bar <- ggplot(pred_long %>% filter(predictor %in% c('TOP', 'TEve', 'TDiv'))) +
   geom_bar(aes(y=value, x=predictor, fill=Site), stat='identity', position='dodge', color='black') +
   labs(y='Index measure', x=NULL) +
-  scale_fill_viridis_d(begin=0.1, end=0.95, guide="none", option="mako") + looks +
-  scale_y_continuous(expand=expansion(mult=c(.0,.05)), limits=c(0,1))
+  scale_fill_manual(values = palette2, labels = titles) + looks +
+  scale_y_continuous(expand=expansion(mult=c(.0,.05)), limits=c(0,1)) + theme(legend.position = "none")
 
 A_bar <- ggplot(pred_long %>% filter(predictor == 'Herb' | predictor == 'Benthic')) +
   geom_bar(aes(y=value, x=predictor, group=Site, fill=Site), stat='identity', position='dodge', color='black') +
   labs(y='Relative abundance', x=NULL) +
-  scale_fill_viridis_d(begin=0.1, end=0.95, guide="none", option="mako") + looks + 
+  scale_fill_manual(values = palette2, labels = titles) + looks + 
   scale_y_continuous(expand=expansion(mult=c(.0,.05))) +
-  scale_x_discrete(labels=c('Benthic biters', 'Herbivores'))
+  scale_x_discrete(labels=c('Benthic biters', 'Herbivores')) + theme(legend.position = "none")
 
 bars <- (A_bar | FD_bar) * plot_layout(widths=c(2,3))
 
-Fig2 <- (bars / ((global1/global2) | t.space[[1]] | t.space[[2]] | t.space[[3]])) * plot_layout(guides='collect', heights = c(1,3)) * theme(axis.text = element_text(size=9)) & theme(plot.title=element_text(face='bold', hjust=0.5, size=13))
-Fig2
+FigS4 <- (bars / ((global1/global2) | t.space[[1]] | t.space[[2]] | t.space[[3]])) * plot_layout(guides='collect', heights = c(1,3)) * theme(axis.text = element_text(size=9)) & theme(plot.title=element_text(face='bold', hjust=0.5, size=13))
+FigS4
 ggsave(filename = "../MS_CoralReefs/rev2/figures/traitcompare_indp.svg", device = "svg", width=30, height=16, units='cm', dpi=300)
 
 rm(bars, global1, global2, t.space, A_bar, FD_bar, pred_long, s.space, s.hull.v, s.hull.v2, shortsp, site.n, looks, hull.v, hull.v2, Sp, palette, i, validate, titles) # clear figure objects

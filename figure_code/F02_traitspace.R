@@ -14,6 +14,8 @@ require(dplyr)
 require(patchwork)
 require(viridis)
 
+looks <- theme_bw(base_size=13) + theme(panel.grid=element_blank(), axis.ticks=element_line(size=0.3))
+
 t.space <- as.list(rep(0,4))
 source('./analysis_code/function_convhull.R') # make plottable convex hull vertices
 
