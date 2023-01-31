@@ -2,8 +2,7 @@
 #############################################################################
 
 # FishTraitsxCoralRec
-# Responses to fish trait diversity in coral settlement and recruitment
-# Coral settlement model selection
+# Coral settlement model construction and selection
 # Author: Cher Chow
 
 #############################################################################
@@ -15,11 +14,23 @@
 # Herb = Relative herbivore abundance
 # Benthic = Relative benthic biter abundance
 
-require(tidyverse)
+require(dplyr)
+require(tidyr)
+require(ggplot2)
 require(lme4)
+require(MuMIn)
 require(performance)
 require(readxl)
 set.seed(24)
+
+# predictor collinearity check
+cor.sett <- as_tibble(round(cor(predictors[-1]),2))
+head(cor.sett)
+cor.sett$var1 <- colnames(cor.sett)
+cor.sett <- pivot_longer(as_tibble(cor.sett), -var1)
+looks <- theme_bw(base_size=13) + theme(panel.grid=element_blank(), axis.ticks=element_line(size=0.3))
+ggplot(data = cor.sett %>% filter(value != 1), aes(x=var1, y=name, fill=sqrt(value^2))) + 
+  geom_tile() + looks + scale_fill_viridis_c(name=bquote('absolute value'~R^2)) + labs(x=NULL, y=NULL)
 
 settlement <- read_xlsx('./src/coral_settlement.xlsx', sheet='Sheet1', col_names=T)
 # head(settlement)
@@ -40,59 +51,59 @@ str(SpatData) # check that all of the data are in the proper data types before f
 SpatData$Site <- as.factor(SpatData$Site) # Yep, site was not a factor
 SpatData$ForRate <- as.numeric(SpatData$ForRate)
 
-Model.Sett <- as.list(c(0,0))
+sett_global <- glmer.nb(data=SpatData, 
+                        Spat ~ ForRate + TEve + TDiv + TOP + Herb + Benthic + (1|Site), na.action = 'na.fail')
+# use dredge to run model selection with all possible predictor combinations 
+# fixed variables i.e. constant predictors in all candidate combinations = ForRate + Site
+sett.select <- dredge(sett_global, beta = 'none', evaluate = T, rank = 'AICc', fixed = c('ForRate', 'Site'))
+sett.select # selection table
 
-Model.Sett[[1]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + TEve + TDiv + TOP + Herb + Benthic + (1|Site))
-Model.Sett[[2]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + Herb + Benthic + (1|Site)) # failed to converge
-Model.Sett[[3]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + TEve + TDiv + TOP + (1|Site))
-Model.Sett[[4]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + TDiv + TOP + Herb + (1|Site))
-Model.Sett[[5]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + TDiv + TOP + Herb + Benthic + (1|Site))
-Model.Sett[[6]] <- glmer.nb(data=SpatData, 
-                              Spat ~ (1|Site))
-Model.Sett[[7]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + Herb + (1|Site))
-Model.Sett[[8]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + TEve + TDiv + TOP + Benthic + (1|Site))
-Model.Sett[[9]] <- glmer.nb(data=SpatData, 
-                              Spat ~ ForRate + TEve + TDiv + TOP + Herb + (1|Site))
-
-for (i in 1:length(Model.Sett)) {
-  print(summary(Model.Sett[[i]]))
-}
-
-Model.Sett <- Model.Sett[-2]
-
+## Custom selection table
 ## Model comparison summary
-summary.sett <- data.frame(Model=1:length(Model.Sett))
-for (i in 1:length(Model.Sett)) {
-  summary.sett$nTerms[i] <- length(rownames(summary(Model.Sett[[i]])$coefficients))-1
-  summary.sett$AICc[i] <- round(MuMIn::AICc(Model.Sett[[i]]), 2)
-  summary.sett$BIC[i] <- round(BIC(Model.Sett[[i]]), 2)
-  summary.sett$dev[i] <- round(summary(Model.Sett[[i]])$AIC[4], 2)
-  summary.sett$Dispersion[i] <- round(summary(Model.Sett[[i]])$AIC[4]/df.residual(Model.Sett[[i]]), 2)
+top10 <- get.models(sett.select, 1:10)
+top10[[11]] <- glmer.nb(data=SpatData, 
+                        Spat ~ (1|Site), na.action = 'na.fail')
+summary.sett <- data.frame(ModelRank=1:11) # just top 10 candidates
+for (i in 1:11) {
+  summary.sett$nTerms[i] <- getAllTerms(top10[[i]], intercept = F) %>% length
+  summary.sett$AICc[i] <- round(MuMIn::AICc(top10[[i]]), 2)
+  summary.sett$BIC[i] <- round(BIC(top10[[i]]), 2)
+  summary.sett$dev[i] <- round(summary(top10[[i]])$AIC[4], 2)
+  summary.sett$Dispersion[i] <- round(summary(top10[[i]])$AIC[4] / df.residual(top10[[i]]), 2)
+  summary.sett$mR2[i] <- r.squaredGLMM(top10[[i]])
 }
 summary.sett <- summary.sett %>% arrange(AICc, BIC)
 summary.sett$wAIC <- round(MuMIn::Weights(summary.sett$AICc), 3)
-summary.sett$dAIC <- summary.sett$AICc-summary.sett$AICc[1] %>% round(., 3)
-summary.sett$dBIC <- summary.sett$BIC-summary.sett$BIC[1] %>% round(., 3)
-rownames(summary.sett) <- summary.sett$Model
+summary.sett$dAIC <- summary.sett$AICc - summary.sett$AICc[1] %>% round(., 3)
+summary.sett$dBIC <- summary.sett$BIC - summary.sett$BIC[1] %>% round(., 3)
+summary.sett$mR2 <- round(summary.sett$mR2, 3)
 print(summary.sett)
 
-i=4
-model_performance(Model.Sett[[i]])
+# SELECT MODEL
+sett <- get.models(sett.select, 1)[[1]] # picked model 1 based on AICc
+summary(sett)
+model_performance(sett)
+
 # diagnostic plots
-print(check_model(Model.Sett[[i]]))
+print(check_model(sett))
+
 # overdispersion check
 # QQ plot
 par(mfrow=c(1,2))
-plot(predict(Model.Sett[[i]], type='link', re.form=NA), residuals(Model.Sett[[i]], type='deviance'), xlab='Predicted', ylab='Deviance')
+plot(predict(sett, type='link', re.form=NA), residuals(sett, type='deviance'), xlab='Predicted', ylab='Deviance')
 abline(h=0, lty=2)
-qqnorm(residuals(Model.Sett[[i]], type='deviance'))
-qqline(residuals(Model.Sett[[i]], type='deviance'))
+qqnorm(residuals(sett, type='deviance'))
+qqline(residuals(sett, type='deviance'))
 par(mfrow=c(1,1))
 
+# save model outputs
+sink(file = 'outputs/settlement_model.txt', append = F) # start file sink
+
+## SETTLEMENT MODEL SELECTION
+print(sett.select)
+print(summary.sett)
+
+## SELECTED SETTLEMENT MODEL
+print(summary(sett))
+
+sink()

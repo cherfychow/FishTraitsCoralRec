@@ -9,9 +9,12 @@
 #############################################################################
 
 require(ggrepel)
-require(tidyverse)
+require(ggplot2)
+require(dplyr)
 require(patchwork)
 require(viridis)
+
+looks <- theme_bw(base_size=13) + theme(panel.grid=element_blank(), axis.ticks=element_line(size=0.3))
 
 t.space <- as.list(rep(0,4))
 source('./analysis_code/function_convhull.R') # make plottable convex hull vertices
@@ -26,7 +29,7 @@ titles <- c('Corner Beach', 'Lagoon', 'North Reef', 'Resort', 'Southeast', 'Turt
 for (i in 1:7) {
   # Now that the base layers are done, I'll plot each site's points and hulls on
   # first, make a dummy points dataframe only with the species in that site
-  pointS <- UBRUVspecies %>% filter(Site == unique(UBRUVspecies$Site)[i]) %>% ungroup() %>% select(Species, n)
+  pointS <- fish_assemblage %>% filter(Site == unique(fish_assemblage$Site)[i]) %>% ungroup() %>% select(Species, n)
   pointS$n <- pointS$n/site.total$site.total[i] # relative abundance of each species
   pointS <- left_join(pointS, point, by='Species')
   pointS <- pointS[order(pointS$n, decreasing=T),order(colnames(pointS))]
@@ -55,7 +58,7 @@ for (i in 1:7) {
     if (i != 4) {
       theme(axis.title.y=element_blank(), axis.text.y=element_blank(), 
             legend.position='none')
-      } 
+    } 
   else {theme()}
   s.space[[2]] <- ggplot() + looks +
     geom_polygon(data=hull.v2, aes(x=A3, y=A4), color='grey', fill='white') +
@@ -70,7 +73,7 @@ for (i in 1:7) {
     if (i != 4) {
       theme(axis.title.y=element_blank(), axis.text.y=element_blank(), 
             legend.position='none')
-      } 
+    } 
   else {theme()}
   
   t.space[[i]] <- s.space[[1]] / s.space[[2]] # stack them with patchwork and store
@@ -103,12 +106,12 @@ A_bar <- ggplot(pred_long %>% filter(predictor == 'Herb' | predictor == 'Benthic
   labs(y='Relative abundance', x=NULL) +
   scale_fill_viridis_d(begin=0.1, end=0.95, guide="none", option="mako") + looks + 
   scale_y_continuous(expand=expansion(mult=c(.0,.05))) +
-  scale_x_discrete(labels=c('Benthic biters', 'Herbivores'))
+  scale_x_discrete(labels=c('Sessile invertivores', 'Herbivores'))
 
 bars <- (A_bar | FD_bar) * plot_layout(widths=c(2,3))
 
 Fig2 <- (bars / ((global1/global2) | t.space[[1]] | t.space[[2]] | t.space[[3]]) / (t.space[[4]] | t.space[[5]] | t.space[[6]] | t.space[[7]])) * plot_layout(guides='collect', heights = c(1,3,3)) * theme(axis.text = element_text(size=9)) & theme(plot.title=element_text(face='bold', hjust=0.5, size=13))
 Fig2
 
-ggsave(filename = "./figures/02_traitspaces.svg", device = "svg", width=30, height=30, units='cm', dpi=300)
+# ggsave(plot = Fig2, filename = paste0(fig_dir, "02_traitspaces.svg"), device = "svg", width=30, height=30, units='cm', dpi=300)
 rm(FD_bar, A_bar, bars, global1, global2, t.space, s.hull.v, s.hull.v2, s.space, hull.v, hull.v2)

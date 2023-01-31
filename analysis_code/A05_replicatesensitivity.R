@@ -1,7 +1,7 @@
 
 # FishTraitsCoralRec
 # RUV sensitivity analysis
-# Assemblage capture power and species accumulation over time
+# Assemblage sampling sensitivity, includes plotting code
 
 
 # Setup and data clean--------------------------------------------------------
@@ -16,7 +16,6 @@ set.seed(24) # repeatability :)
 # needed functions
 source('analysis_code/TOP_Fontanaetal2015.R')
 source('./analysis_code/function_convhull.R') # make plottable convex hull vertices, plotting purposes
-
 
 # read in assemblage data from folder
 ruv2.data <- read_excel('src/Video2_SE-NR-TB.xlsx')
@@ -80,10 +79,6 @@ colnames(Sp.list)[1] <- "Species" #rename the Species column in the worms datafr
 Sp.count$genus <- word(Sp.count$Species, 1) # add genus column to the species count summary tibble
 Sp.count <- left_join(Sp.count, distinct(Sp.list[,2:3]), by='genus') # and add family taxonomic info too
 
-# uncomment to save
-# write.csv(Sp.count[c(4,3,1,2)], 'src/fish_sptaxonomy.csv')
-# write.csv(fish.ruv, 'src/fish_assemblage.csv')
-
 
 # Trait space construction, new only ------------------------------------------------
 
@@ -101,7 +96,7 @@ abund <- Sp.count %>% filter(!str_detect(Species, ' sp$')) %>%
 abund$Site <- 'All'
 abund <- rbind(fish.ruv %>% filter(!str_detect(Species, ' sp$')) %>% select(Site, Species, n) %>% spread(Species, n), abund)
 # because not all species occur in each site, there are lots of NAs to be filled with 0s
-NAlist <- as.list(rep('0',dim(abund)[2]-1)) # list has to have column names for every item = 0
+NAlist <- as.list(rep(0,ncol(abund)-1)) # list has to have column names for every item = 0
 names(NAlist) <- colnames(abund)[2:ncol(abund)]
 abund <- abund %>% replace_na(NAlist) # annnd replace NAs
 
@@ -155,50 +150,33 @@ if (file.exists('vert.txt')) {
 
 ## Calculate relative abundances herbivore biters --------------------------
 
-traits2$Species <- rownames(traits2)
-# also make separate trait tables for each site
-traits.sites <- as.list(rep('0', 3))
-for (i in 1:3) {
-  site.sp <- fish.ruv %>% filter(Site == unique(fish.ruv$Site)[i]) %>% ungroup() %>% select(Species)
-  # filter the tibble by each site and extract the species
-  traits.sites[[i]] <- as.data.frame(left_join(site.sp, traits2, by='Species'))
-  # Use the site specific species list to match with the traits
-  rownames(traits.sites[[i]]) <- traits.sites[[i]]$Species # row names bc FD requires it
-  traits.sites[[i]][,1] <- NULL # Remove the Species column now that things are joined
-}
-names(traits.sites) <- unique(fish.ruv$Site) # name list items by site
-rm(site.sp)
-traits.sites[[4]] <- traits2[,-1]
-names(traits.sites)[4] <- 'all' # all sites again
+# restart R, not sure why package interactions break dplyr
+require(dplyr)
+require(stringr)
 
+# reference vector of herbivore species
+herb_spp <- traits2 %>% filter(TrophParr == 'herb_mic') %>% pull(Species)
+site.herb <- fish.ruv %>% filter(Species %in% herb_spp) # filter assemblage data by herbivores
+site.herb <- site.herb %>% group_by(Site) %>% summarise(Herb = sum(n)) %>% # add them all up
+  left_join(., site.n, by="Site") %>% 
+  mutate(Herb = Herb/n) %>% select(!n) # divide by total for rel abundance
 # herbivore abundance
-site.herb <- data.frame(Site=predictors$Site, Herb=rep(0,3))
-for (i in 1:3) {
-  herb <- as.data.frame(traits.sites[[i]])
-  herb$Species <- rownames(herb)
-  herb <-  herb %>% filter(TrophicGroup=='herbivore') %>% ungroup() %>% select(Species)
-  herb$Site <- names(traits.sites)[i]
-  herb <- left_join(herb, fish.ruv, by=c('Site', 'Species')) %>% ungroup() %>% select(Site, Species, n)
-  site.herb$Herb[i] <- sum(herb$n)/site.n$n[i]
-}
 
 # biter abundance
-site.biter <- data.frame(Site=predictors$Site, Herb=rep(0,3))
-for (i in 1:3) {
-  biter <- as.data.frame(traits.sites[[i]])
-  biter$Species <- rownames(biter)
-  biter <-  biter %>% filter(ColumnFeed == 'benthic') %>% 
-    filter(str_detect(TrophicGroup, 'detritovore|invertivore|omnivore')) %>% ungroup() %>% select(Species)
-  biter$Site <- names(traits.sites)[i]
-  biter <- left_join(biter, fish.ruv, by=c('Site', 'Species')) %>% ungroup() %>% select(Site, Species, n)
-  site.biter$Benthic[i] <- sum(biter$n)/site.n$n[i]
-}
+# just pull out the sessile invertivore species
+bite_spp <- traits %>% filter(TrophParr == 'sess_inv') %>% pull(Species)
+site.biter <- fish.ruv %>% filter(Species %in% bite_spp) # filter assemblage data by herbivores
+site.biter <- site.biter %>% group_by(Site) %>% summarise(Benthic = sum(n)) %>% # add them all up
+  left_join(., site.n, by="Site") %>% 
+  mutate(Benthic = Benthic/n) %>% select(!n) # divide by total for rel abundance
+
 # add it to our predictors dataframe
 predictors$Herb <- site.herb$Herb
-predictors$Benthic <- site.biter$Benthic
+predictors <- left_join(predictors, site.biter, by="Site")
+predictors$Benthic[which(is.na(predictors$Benthic))] <- 0 # because some sites could have none, the NAs need to be zeroes
 
 # clean up objects that aren't dependencies for downstream sourcing
-rm(herb, biter, site.biter, site.herb, traits.sites, abund)
+rm(herb_spp, bite_spp, site.biter, site.herb, abund)
 
 ## Visualise trait space 2 only --------------------------
 
@@ -216,9 +194,9 @@ hull.v2 <- convhull.vert(tr.point[,3:4])
 palette <- viridis::viridis(n=3, end=0.95, begin=0.1, alpha=0.7, option="mako")
 titles <- c('North Reef', 'Southeast', 'Turtle Beach')
 looks <- theme_bw(base_size=12) + theme(panel.grid = element_blank())
+palette2 <- c('#5A0C30', '#8E1C70', '#9266BC') # for the secondary data
 
 # object for total fishes in each site
-
 
 for (i in 1:3) {
   # Now that the base layers are done, I'll plot each site's points and hulls on
@@ -242,9 +220,9 @@ for (i in 1:3) {
   s.space[[1]] <- ggplot() + looks +
     geom_polygon(data=hull.v, aes(x=A1, y=A2), color='grey', fill='white') +
     labs(x='PCo1', y='PCo2', title=titles[i]) +
-    geom_polygon(data=s.hull.v, aes(x=A1, y=A2), fill=palette[i], alpha=0.25) +
+    geom_polygon(data=s.hull.v, aes(x=A1, y=A2), fill=palette2[i], alpha=0.25) +
     geom_point(data=pointS %>% left_join(., traits2, by="Species"),
-               aes(x=A1, y=A2, size=n), fill=palette[i], color='#666666', shape=21) +
+               aes(x=A1, y=A2, size=n), fill=palette2[i], color='#666666', shape=21) +
     geom_text_repel(data=pointS %>% arrange(n) %>% top_n(5), aes(label=ShortSp, x=A1, y=A2), force=2,
                     size=2.8, fontface='italic', min.segment.length = 0, point.size=5,
                     max.overlaps = Inf, box.padding = 1, force_pull=0.1) +
@@ -257,9 +235,9 @@ for (i in 1:3) {
   s.space[[2]] <- ggplot() + looks +
     geom_polygon(data=hull.v2, aes(x=A3, y=A4), color='grey', fill='white') +
     labs(x='PCo3', y='PCo4') +
-    geom_polygon(data=s.hull.v2, aes(x=A3, y=A4), fill=palette[i], alpha=0.25) +
+    geom_polygon(data=s.hull.v2, aes(x=A3, y=A4), fill=palette2[i], alpha=0.25) +
     geom_point(data=pointS %>% left_join(., traits2, by="Species"), 
-               aes(x=A3, y=A4, size=n), fill=palette[i], color='#666666', shape=21) +
+               aes(x=A3, y=A4, size=n), fill=palette2[i], color='#666666', shape=21) +
     geom_text_repel(data=pointS %>% arrange(n) %>% top_n(5), aes(label=ShortSp, x=A3, y=A4), force=2,
                     size=2.8, fontface='italic', min.segment.length = 0, point.size=5,
                     max.overlaps = Inf, box.padding = 1, force_pull=0.1) +
@@ -286,26 +264,26 @@ global2 <- ggplot() + looks +
   labs(x='PCo3', y='PCo4') + theme(legend.title=element_blank()) +
   scale_fill_grey(aesthetics="color", start=0.2, end=0.7) + scale_shape_manual(values=c(1:6,21:25), guide="none")
 
-pred_long <- predictors %>% pivot_longer(cols=!Site, names_to="predictor", values_to="value")
+pred_long <- predictors %>% tidyr::pivot_longer(cols=!Site, names_to="predictor", values_to="value")
 
 FD_bar <- ggplot(pred_long %>% filter(predictor %in% c('TOP', 'TEve', 'TDiv'))) +
   geom_bar(aes(y=value, x=predictor, fill=Site), stat='identity', position='dodge', color='black') +
   labs(y='Index measure', x=NULL) +
-  scale_fill_viridis_d(begin=0.1, end=0.95, guide="none", option="mako") + looks +
-  scale_y_continuous(expand=expansion(mult=c(.0,.05)), limits=c(0,1))
+  scale_fill_manual(values = palette2, labels = titles) + looks +
+  scale_y_continuous(expand=expansion(mult=c(.0,.05)), limits=c(0,1)) + theme(legend.position = "none")
 
 A_bar <- ggplot(pred_long %>% filter(predictor == 'Herb' | predictor == 'Benthic')) +
   geom_bar(aes(y=value, x=predictor, group=Site, fill=Site), stat='identity', position='dodge', color='black') +
   labs(y='Relative abundance', x=NULL) +
-  scale_fill_viridis_d(begin=0.1, end=0.95, guide="none", option="mako") + looks + 
+  scale_fill_manual(values = palette2, labels = titles) + looks + 
   scale_y_continuous(expand=expansion(mult=c(.0,.05))) +
-  scale_x_discrete(labels=c('Benthic biters', 'Herbivores'))
+  scale_x_discrete(labels=c('Benthic biters', 'Herbivores')) + theme(legend.position = "none")
 
 bars <- (A_bar | FD_bar) * plot_layout(widths=c(2,3))
 
-Fig2 <- (bars / ((global1/global2) | t.space[[1]] | t.space[[2]] | t.space[[3]])) * plot_layout(guides='collect', heights = c(1,3)) * theme(axis.text = element_text(size=9)) & theme(plot.title=element_text(face='bold', hjust=0.5, size=13))
-Fig2
-ggsave(filename = "../MS_CoralReefs/rev1/revision_figs/traitcompare_indp.svg", device = "svg", width=30, height=16, units='cm', dpi=300)
+FigS4 <- (bars / ((global1/global2) | t.space[[1]] | t.space[[2]] | t.space[[3]])) * plot_layout(guides='collect', heights = c(1,3)) * theme(axis.text = element_text(size=9)) & theme(plot.title=element_text(face='bold', hjust=0.5, size=13))
+FigS4
+ggsave(filename = "../MS_CoralReefs/rev2/figures/traitcompare_indp.svg", device = "svg", width=30, height=16, units='cm', dpi=300)
 
 rm(bars, global1, global2, t.space, A_bar, FD_bar, pred_long, s.space, s.hull.v, s.hull.v2, shortsp, site.n, looks, hull.v, hull.v2, Sp, palette, i, validate, titles) # clear figure objects
 
@@ -345,16 +323,16 @@ abund <- rbind(sp.combined %>% filter(!str_detect(Species, ' sp$')) %>% select(S
 abund$Site <- c('RUV1', 'RUV2')
 abund <- rbind(ruv.combined %>% filter(!str_detect(Species, ' sp$')) %>% select(Site, Species, n) %>% pivot_wider(names_from = Species, values_from = n), abund)
 # because not all species occur in each site, there are lots of NAs to be filled with 0s
-NAlist <- as.list(rep('0',dim(abund)[2]-1)) # list has to have column names for every item = 0
+NAlist <- as.list(rep(0,dim(abund)[2]-1)) # list has to have column names for every item = 0
 names(NAlist) <- colnames(abund)[2:ncol(abund)]
 abund <- abund %>% replace_na(NAlist) # annnd replace NAs
 colnames(abund)[1] <- '0Site'
-abund <- abund %>% select(sort(current_vars()))
+abund <- abund %>% select(sort(tidyselect::peek_vars()))
 abund[-1] <- abund[-1] %>% dplyr::mutate(across(everything(), as.numeric))
 rm(NAlist)
 
 # combined trait table
-traits.combined <- traits2 %>% filter(!Species %in% traits$Species) %>% bind_rows(traits[-1])
+traits.combined <- traits2 %>% filter(!Species %in% traits$Species) %>% bind_rows(traits)
 traits.combined <- traits.combined %>% arrange(Species)
 rownames(traits.combined) <- traits.combined$Species
 
@@ -553,13 +531,18 @@ global2 <- ggplot() + looks +
   labs(x='PCo3', y='PCo4')
 
 ((global1 / global2) | t.space[[1]] | t.space[[2]] | t.space[[3]])
-ggsave(filename = "../MS_CoralReefs/rev1/revision_figs/traitcompare_together.svg", device = "svg", width=28, height=12, units='cm', dpi=300)
+ggsave(filename = "../MS_CoralReefs/rev2/figures/traitcompare_together.svg", device = "svg", width=28, height=12, units='cm', dpi=300)
 
 pred_long <- new_vars %>% pivot_longer(cols=!Site, names_to="predictor", values_to="value")
-ggplot(pred_long %>% filter(Site %in% abund$Site[c(3,5,6,8:10)])) +
+pred_long <- pred_long %>% filter(Site %in% abund$Site[c(3,5,6,8:10)])
+pred_long$Site <- factor(pred_long$Site, levels = c('North3', 'Southeast', 'TurtleBeach', 'NR_2', 'SE_2', 'TB_2'))
+ggplot(pred_long) +
   geom_bar(aes(y=value, x=predictor, fill=Site), stat='identity', position='dodge', color='black') +
   labs(y='Index measure', x=NULL) + theme_bw() +
   scale_y_continuous(expand=expansion(mult=c(.0,.05)), limits=c(0,1))
+
+ggsave(filename = "../MS_CoralReefs/rev2/figures/traitindex_compare.eps", device = "eps", width=21, height=7, units='cm', dpi=300)
+
 
 rm(bars, global1, global2, t.space, A_bar, FD_bar, pred_long, s.space, s.hull.v, s.hull.v2, shortsp, looks, hull.v, hull.v2, Sp, palette, i, validate, titles) # clear figure objects
 

@@ -12,11 +12,16 @@
 require(tidyverse)
 require(lme4)
 require(readxl)
+require(MuMIn)
+require(performance)
 set.seed(24)
 
 # Read in 2018 spat data
 settlement.18 <- read_xlsx('./src/coral_settlement.xlsx', sheet='Sheet1', col_names=T)
 str(settlement.18)
+
+
+# Data prep ---------------------------------------------------------------
 
 # select just the 7 study sites and their spat data from 2018
 settlement.18 <- settlement.18 %>% group_by(year, site) %>% 
@@ -32,6 +37,7 @@ rm(site.rename)
 settlement.18 <- settlement.18 %>% group_by(site) %>% summarise(Spat2018=sum(total))
 colnames(settlement.18)[1] <- 'Site'
 predictors$Spat2018 <- settlement.18$Spat2018
+predictors$ForRate <- as.vector(predictors$ForRate)
 
 # Import recruit data
 recruits <- read_xlsx('./src/coral_recruit.xlsx', sheet='data', col_names=T, na='NA')
@@ -41,7 +47,7 @@ recruits <- recruits %>% drop_na() %>% group_by(site, quadrant) %>% summarise(Re
 colnames(recruits)[1] <- 'Site'
 # rectify some spelling inconsistencies
 
-predictors$Spat2018 <- scale(predictors$Spat2018, scale=T, center=F)
+predictors$Spat2018 <- scale(predictors$Spat2018, scale=T, center=F) %>% as.vector # scale between 0 and 1
 recruits$Site <- str_replace_all(recruits$Site, 'Vicky', 'Vickis')
 recruits$Site <- str_replace_all(recruits$Site, 'Turtle$', 'TurtleBeach')
 RecruitData <- na.omit(recruits) %>% full_join(y=predictors, by='Site') %>% mutate_if(is.character, as.factor) # now join it all
@@ -54,68 +60,65 @@ cor.recruit$var1 <- colnames(cor.recruit)
 cor.recruit <- pivot_longer(as_tibble(cor.recruit), -var1)
 
 ggplot(data = cor.recruit %>% filter(value != 1), aes(x=var1, y=name, fill=sqrt(value^2))) + 
-  geom_tile() + scale_fill_viridis_c(option='plasma', name=bquote('absolute value'~R^2)) + labs(x=NULL, y=NULL)
+  geom_tile() + scale_fill_viridis_c(option='plasma', name=bquote('absolute value'~R^2), limit = c(0,1)) + labs(x=NULL, y=NULL)
 
-# Construct model candidates --------------------------------------------
+# Construct model candidates and select --------------------------------------------
 
-Model.Rec <- as.list(rep(0,10))
-names(Model.Rec) <- paste0('Rec', 1:10)
+rec_global <- glmer.nb(data=RecruitData, 
+                       Recruits ~ Spat2018 + ForRate + TEve + TDiv + TOP + Herb + Benthic + (1|Site), na.action = 'na.fail')
+# use dredge to run model selection with all possible predictor combinations (with site fixed)
+rec.select <- dredge(rec_global, beta = 'none', evaluate = T, rank = 'AICc', fixed = c('Spat2018', 'ForRate', 'Site'))
+rec.select
 
-Model.Rec[[1]] <- glmer.nb(data=RecruitData,
-                              formula=Recruits ~ Spat2018 + (1|Site)) # null model. Failed to converge
-Model.Rec[[2]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + ForRate + TEve + TDiv + TOP + Herb + Benthic + (1|Site))
-Model.Rec[[3]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + ForRate + Herb + Benthic + (1|Site))
-Model.Rec[[4]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + ForRate + TEve + TDiv + TOP + (1|Site))
-Model.Rec[[5]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + ForRate + TDiv + TOP + Herb + (1|Site))
-Model.Rec[[6]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + ForRate + TDiv + TOP + Herb + Benthic + (1|Site))
-Model.Rec[[7]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + ForRate + TDiv + Herb + (1|Site))
-Model.Rec[[8]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + ForRate + TEve + TDiv + TOP + Benthic + (1|Site))
-Model.Rec[[9]] <- glmer.nb(data=RecruitData, 
-                              Recruits ~ Spat2018 + ForRate + Herb + (1|Site))
-Model.Rec[[10]] <- glmer.nb(data=RecruitData,
-                               formula=Recruits ~ (1|Site)) # null model 2, failed to converge
-
-for (i in 1:length(Model.Rec)) {
-  print(summary(Model.Rec[[i]]))
-}
-
-Model.Rec <- Model.Rec[-c(1,10)] # remove the ones that fail to converge
-
-# Recruitment model comparison --------------------------------------------
-summary.rec <- data.frame(Model=c(1:8))
-for (i in 1:8) {
-  summary.rec$nTerms[i] <- length(rownames(summary(Model.Rec[[i]])$coefficients))-1
-  summary.rec$AICc[i] <- round(MuMIn::AICc(Model.Rec[[i]]), 2)
-  summary.rec$BIC[i] <- round(BIC(Model.Rec[[i]]), 2)
-  summary.rec$dev[i] <- round(summary(Model.Rec[[i]])$AIC[4], 2)
-  summary.rec$Dispersion[i] <- round(deviance(Model.Rec[[i]])/summary(Model.Rec[[i]])$AIC[5], 2)
+## custom model selection table with deviance
+top10 <- get.models(rec.select, 1:10)
+# add null models for comparison
+top10[[11]] <- glmer.nb(data=RecruitData, 
+                       Recruits ~ Spat2018 + (1|Site), na.action = 'na.fail')
+top10[[12]] <- glmer.nb(data=RecruitData, 
+                       Recruits ~ (1|Site), na.action = 'na.fail')
+summary.rec <- data.frame(ModelRank=1:12) # just top 10 candidates
+for (i in 1:12) {
+  summary.rec$nTerms[i] <- getAllTerms(top10[[i]], intercept = F) %>% length
+  summary.rec$AICc[i] <- round(MuMIn::AICc(top10[[i]]), 2)
+  summary.rec$BIC[i] <- round(BIC(top10[[i]]), 2)
+  summary.rec$dev[i] <- round(summary(top10[[i]])$AIC[4], 2)
+  summary.rec$Dispersion[i] <- round(summary(top10[[i]])$AIC[4] / df.residual(top10[[i]]), 2)
+  summary.rec$mR2[i] <- r.squaredGLMM(top10[[i]]) %>% round(., 3)
 }
 summary.rec <- summary.rec %>% arrange(AICc, BIC)
-rownames(summary.rec) <- summary.rec$Model
 summary.rec$wAIC <- round(MuMIn::Weights(summary.rec$AICc), 3)
 summary.rec$dAIC <- summary.rec$AICc - summary.rec$AICc[1] %>% round(., 3)
 summary.rec$dBIC <- summary.rec$BIC - summary.rec$BIC[1] %>% round(., 3)
+print(summary.rec)
 
-summary.rec
+
+recr <- get.models(rec.select, 1)[[1]] # print results for top model
+# selected most parsimonious
 
 # Final model diagnostics --------------------------------------------
-i=8
-model_performance(Model.Rec[[i]])
-check_model(Model.Rec[[i]])
-# diagnostic plots
-#print(check_model(Model.Rec[[i]]))
+
+summary(recr)
+model_performance(recr) # AIC and BIC
+check_model(recr) # diagnostic plots
+
 # overdispersion check
 # QQ plot
 par(mfrow=c(1,2))
-plot(predict(Model.Rec[[i]], type='link'), residuals(Model.Rec[[i]], type='deviance'), xlab='Predicted', ylab='Deviance')
+plot(predict(recr, type='link'), residuals(recr, type='deviance'), xlab='Predicted', ylab='Deviance')
 abline(h=0, lty=2)
-qqnorm(residuals(Model.Rec[[i]], type='deviance'))
-qqline(residuals(Model.Rec[[i]], type='deviance'))
+qqnorm(residuals(recr, type='deviance'))
+qqline(residuals(recr, type='deviance'))
 par(mfrow=c(1,1))
+
+# save model outputs
+sink(file = 'outputs/recruitment_model.txt', append = F) # start file sink
+
+## RECRUITMENT MODEL SELECTION
+print(rec.select)
+print(summary.rec)
+
+## RECRUITMENT SETTLEMENT MODEL
+print(summary(recr))
+
+sink() # reset back to normal
