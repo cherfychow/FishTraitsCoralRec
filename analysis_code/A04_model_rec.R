@@ -60,7 +60,7 @@ cor.recruit$var1 <- colnames(cor.recruit)
 cor.recruit <- pivot_longer(as_tibble(cor.recruit), -var1)
 
 ggplot(data = cor.recruit %>% filter(value != 1), aes(x=var1, y=name, fill=sqrt(value^2))) + 
-  geom_tile() + scale_fill_viridis_c(option='plasma', name=bquote('absolute value'~R^2)) + labs(x=NULL, y=NULL)
+  geom_tile() + scale_fill_viridis_c(option='plasma', name=bquote('absolute value'~R^2), limit = c(0,1)) + labs(x=NULL, y=NULL)
 
 # Construct model candidates and select --------------------------------------------
 
