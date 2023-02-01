@@ -1,9 +1,10 @@
 #############################################################################
 
-# FishTraitsxCoralRec
-# Responses to fish trait diversity in coral settlement and recruitment
+# FishTraitsCoralRec
 # Data cleanup
-# Author: Cher Chow
+# object names deprecated
+# This script shows the cleaning done to generate the data files provided in 
+# the /src/ directory but can only be run on raw data files with the co-authors
 
 #############################################################################
 

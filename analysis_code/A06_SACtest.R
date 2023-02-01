@@ -7,11 +7,13 @@
 # Setup and wrangling -----------------------------------------------------
 
 require(dplyr)
-require(readxl)
 require(stringr)
+require(lubridate)
 
-ruv1 <- read.csv('src/UBRUV_species_2019.csv', header=T)
-ruv2 <- read_excel('src/Video2_SE-NR-TB.xlsx')
+set.seed(24)
+
+ruv1 <- read.csv('src/fish_assemblage-video.csv', header=T)
+ruv2 <- read.csv('src/fish_camera2.csv', header = T)
 
 sites <- c('North3' = 'NR_2', 'Southeast' = 'SE_2', 'TurtleBeach' = 'TB_2')
 ruv2$Site <- str_replace_all(ruv2$Site, sites)
@@ -20,7 +22,7 @@ sum((colnames(ruv1) == colnames(ruv2)) + 0) # check that columns match
 ruv.data <- bind_rows(ruv1, ruv2) # combine them
 rm(ruv1, ruv2)
 
-library(lubridate)
+
 ruv.data$TimeElapsed <- ms(ruv.data$Timestamp)
 ruv.data <- ruv.data %>% arrange(Site, Date, Camera, VidFile, TimeElapsed)
 # sort by timestamp

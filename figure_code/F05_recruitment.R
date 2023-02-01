@@ -1,11 +1,10 @@
 
 # Coral recruitment model partial regression plot
-# Author: Cher Chow
-# Date: 11 Aug 2020
 
 require(tidyverse)
 require(patchwork)
 require(lme4)
+source('https://gist.github.com/cherfychow/e9ae890fd16f4c86730748c067feee2b/raw/c9caceef463062c75c71b42607954f7958818ff7/cherulean.R')
 
 set.seed(24)
 ci.pred <- function(.) predict(., newx, type='response', re.form=NA)
@@ -38,16 +37,16 @@ sites <- c('Corner Beach', 'Lagoon', 'North Reef', 'Resort', 'Southeast', 'Turtl
 
 for (i in 1:l) { # loop for partial regression plot panels
   recr_par[[i]] <- ggplot(bind_cols(RecruitData, recr_conf[[i]]) %>% bind_cols(., newy=recr_newfit[[i]]), aes_string(y='Recruits', x=names(fixef(recr))[(i+1)])) +
-    geom_ribbon(aes(ymax=upr, ymin=lwr), fill='#a7a9eb', color='transparent', alpha = 0.4) +
+    geom_ribbon(aes(ymax=upr, ymin=lwr), fill='#B0D1FF', color='transparent', alpha = 0.4) +
     geom_point(aes(fill=Site, shape=Site), size=2.5) +
-    geom_line(aes(y=newy), color='#242780', size=0.5) +
-    labs(y=if (i == 4) {'Recruit count'} else {NULL}, x=axis.lab[names(fixef(recr))[(i+1)]]) + looks +
-    scale_fill_viridis_d(begin=0.1, end=0.95, option='mako', name='Study site', labels=sites) +
+    geom_line(aes(y=newy), color='#0B7AC4', size=0.5) +
+    labs(y=if (i == 3) {'Recruit count'} else {NULL}, x=axis.lab[names(fixef(recr))[(i+1)]]) + looks +
+    scale_fill_cherulean(palette = 'globiceps', name='Study site', labels=sites) +
     scale_shape_manual(values=c(3,4,21:25), name='Study site', labels=sites) +
     coord_cartesian(ylim=c(0,max(RecruitData$Recruits)+2)) +
-    theme(legend.position=ifelse(i!=l,yes='none', no='right'), axis.text.y=if (i != 4) {element_blank()})
+    theme(legend.position=ifelse(i!=l,yes='none', no='right'), axis.text.y=if (i != 3) {element_blank()})
 }
 
-Fig5 <- (recr_par[[4]] + recr_par[[3]] + recr_par[[1]] + recr_par[[2]]) + plot_layout(guides='collect', nrow = 1)
+Fig5 <- (recr_par[[3]] + recr_par[[1]] + recr_par[[4]] + recr_par[[2]]) + plot_layout(guides='collect', nrow = 1)
 Fig5
 ggsave(plot = Fig5, filename=paste0(fig_dir, '05_recruitment.svg'), device='svg', width=30, height=7.5, units='cm', dpi=300)

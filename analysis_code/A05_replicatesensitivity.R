@@ -2,6 +2,7 @@
 # FishTraitsCoralRec
 # RUV sensitivity analysis
 # Assemblage sampling sensitivity, includes plotting code
+# this will generate more figures than are shown in the supplementary material
 
 
 # Setup and data clean--------------------------------------------------------
@@ -18,7 +19,7 @@ source('analysis_code/TOP_Fontanaetal2015.R')
 source('./analysis_code/function_convhull.R') # make plottable convex hull vertices, plotting purposes
 
 # read in assemblage data from folder
-ruv2.data <- read_excel('src/Video2_SE-NR-TB.xlsx')
+ruv2.data <- read_excel('src/fish_camera2.xlsx')
 head(ruv2.data) # check read in
 detach(package:readxl)
 
@@ -283,7 +284,7 @@ bars <- (A_bar | FD_bar) * plot_layout(widths=c(2,3))
 
 FigS4 <- (bars / ((global1/global2) | t.space[[1]] | t.space[[2]] | t.space[[3]])) * plot_layout(guides='collect', heights = c(1,3)) * theme(axis.text = element_text(size=9)) & theme(plot.title=element_text(face='bold', hjust=0.5, size=13))
 FigS4
-ggsave(filename = "../MS_CoralReefs/rev2/figures/traitcompare_indp.svg", device = "svg", width=30, height=16, units='cm', dpi=300)
+# ggsave(filename = "/figures/traitcompare_indp.svg", device = "svg", width=30, height=16, units='cm', dpi=300)
 
 rm(bars, global1, global2, t.space, A_bar, FD_bar, pred_long, s.space, s.hull.v, s.hull.v2, shortsp, site.n, looks, hull.v, hull.v2, Sp, palette, i, validate, titles) # clear figure objects
 
@@ -531,7 +532,7 @@ global2 <- ggplot() + looks +
   labs(x='PCo3', y='PCo4')
 
 ((global1 / global2) | t.space[[1]] | t.space[[2]] | t.space[[3]])
-ggsave(filename = "../MS_CoralReefs/rev2/figures/traitcompare_together.svg", device = "svg", width=28, height=12, units='cm', dpi=300)
+# ggsave(filename = "figures/traitcompare_together.svg", device = "svg", width=28, height=12, units='cm', dpi=300)
 
 pred_long <- new_vars %>% pivot_longer(cols=!Site, names_to="predictor", values_to="value")
 pred_long <- pred_long %>% filter(Site %in% abund$Site[c(3,5,6,8:10)])
@@ -541,7 +542,7 @@ ggplot(pred_long) +
   labs(y='Index measure', x=NULL) + theme_bw() +
   scale_y_continuous(expand=expansion(mult=c(.0,.05)), limits=c(0,1))
 
-ggsave(filename = "../MS_CoralReefs/rev2/figures/traitindex_compare.eps", device = "eps", width=21, height=7, units='cm', dpi=300)
+# ggsave(filename = "figures/traitindex_compare.eps", device = "eps", width=21, height=7, units='cm', dpi=300)
 
 
 rm(bars, global1, global2, t.space, A_bar, FD_bar, pred_long, s.space, s.hull.v, s.hull.v2, shortsp, looks, hull.v, hull.v2, Sp, palette, i, validate, titles) # clear figure objects

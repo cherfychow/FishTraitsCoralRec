@@ -1,10 +1,8 @@
 
 #############################################################################
 
-# FishTraitsxCoralRec
-# Responses to fish trait diversity in coral settlement and recruitment
-# Supplementary figure: Global trait distribution
-# Author: Cher Chow
+# FishTraitsCoralRec
+# Supplementary figure: Global (all sites) trait distribution
 
 #############################################################################
 

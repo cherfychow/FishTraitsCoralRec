@@ -1,11 +1,10 @@
 
 # Coral settlement model plotting
-# Author: Cher Chow
-# Date: 11 Aug 2020
 
 require(tidyverse)
 require(patchwork)
 require(lme4)
+source('https://gist.github.com/cherfychow/e9ae890fd16f4c86730748c067feee2b/raw/c9caceef463062c75c71b42607954f7958818ff7/cherulean.R')
 
 set.seed(24)
 ci.pred <- function(.) predict(., newx, type='response', re.form=NA)
@@ -42,9 +41,9 @@ for (i in 1:l) { # loop for partial regression plot panels
   par.reg[[i]] = ggplot(bind_cols(SpatData, conf[[i]]) %>% bind_cols(., newy=newfit[[i]]), aes_string(y='Spat', x=names(fixef(sett))[(i+1)])) +
     geom_ribbon(aes(ymax=upr, ymin=lwr), fill='#6dc7a9', color='transparent', alpha = 0.4) +
     geom_point(aes(fill=Site, shape=Site), size=2.5) +
-    geom_line(aes(y=newy), color='#075c40', size=0.5) +
+    geom_line(aes(y=newy), color='#12876a', size=0.5) +
     labs(y=if (i == 4) {'Spat count'} else {NULL}, x=axis.lab[names(fixef(sett))[(i+1)]]) + looks +
-    scale_fill_viridis_d(begin=0.1, end=0.95, option='mako', name='Study site', labels=sites) +
+    scale_fill_cherulean(palette = 'globiceps', name='Study site', labels=sites) +
     scale_shape_manual(values=c(3,4,21:25), name='Study site', labels=sites) +
     coord_cartesian(ylim=c(0,max(SpatData$Spat)+2)) +
     theme(legend.position=ifelse(i!=l,yes='none', no='right'), axis.text.y=if (i != 4) {element_blank()})

@@ -1,10 +1,8 @@
 
 #############################################################################
 
-# FishTraitsxCoralRec
-# Responses to fish trait diversity in coral settlement and recruitment
+# FishTraitsCoralRec
 # Figure 2: Trait space figures (by site, and also globally showing by each trait)
-# Author: Cher Chow
 
 #############################################################################
 
@@ -18,12 +16,13 @@ looks <- theme_bw(base_size=13) + theme(panel.grid=element_blank(), axis.ticks=e
 
 t.space <- as.list(rep(0,4))
 source('./analysis_code/function_convhull.R') # make plottable convex hull vertices
+source('https://gist.github.com/cherfychow/e9ae890fd16f4c86730748c067feee2b/raw/c9caceef463062c75c71b42607954f7958818ff7/cherulean.R')
 
 hull.v <- convhull.vert(point[,1:2])
 hull.v2 <- convhull.vert(point[,3:4])
 
 # palette for sites
-palette <- viridis::viridis(n=7, end=0.95, begin=0.1, alpha=0.7, option="mako")
+palette <- cherulean(7, palette = 'globiceps') %>% paste0(., 'A6')
 titles <- c('Corner Beach', 'Lagoon', 'North Reef', 'Resort', 'Southeast', 'Turtle Beach', "Vicki's")
 
 for (i in 1:7) {
@@ -48,7 +47,7 @@ for (i in 1:7) {
   s.space[[1]] <- ggplot() + looks +
     geom_polygon(data=hull.v, aes(x=A1, y=A2), color='grey', fill='white') +
     labs(x='PCo1', y='PCo2', title=titles[i]) +
-    geom_polygon(data=s.hull.v, aes(x=A1, y=A2), fill=palette[i], alpha=0.25) +
+    geom_polygon(data=s.hull.v, aes(x=A1, y=A2), fill=palette[i], alpha=0.5) +
     geom_point(data=pointS %>% left_join(., traits, by="Species"),
                aes(x=A1, y=A2, size=n), fill=palette[i], color='#666666', shape=21) +
     geom_text_repel(data=pointS %>% arrange(n) %>% top_n(5), aes(label=ShortSp, x=A1, y=A2), force=2,
@@ -63,7 +62,7 @@ for (i in 1:7) {
   s.space[[2]] <- ggplot() + looks +
     geom_polygon(data=hull.v2, aes(x=A3, y=A4), color='grey', fill='white') +
     labs(x='PCo3', y='PCo4') +
-    geom_polygon(data=s.hull.v2, aes(x=A3, y=A4), fill=palette[i], alpha=0.25) +
+    geom_polygon(data=s.hull.v2, aes(x=A3, y=A4), fill=palette[i], alpha=0.5) +
     geom_point(data=pointS %>% left_join(., traits, by="Species"), 
                aes(x=A3, y=A4, size=n), fill=palette[i], color='#666666', shape=21) +
     geom_text_repel(data=pointS %>% arrange(n) %>% top_n(5), aes(label=ShortSp, x=A3, y=A4), force=2,
@@ -77,9 +76,13 @@ for (i in 1:7) {
   else {theme()}
   
   t.space[[i]] <- s.space[[1]] / s.space[[2]] # stack them with patchwork and store
+  rm(pointS)
 }
 
-rm(pointS)
+
+
+
+Sp.count <- fish_assemblage %>% group_by(Species) %>% summarise(n = sum(n)) %>% ungroup
 point$n <- Sp.count$n/sum(Sp.count$n) # put in global abundances to visualise all sites
 global1 <- ggplot() + looks +
   geom_polygon(data=hull.v, aes(x=A1, y=A2), fill='transparent', color='grey') +
@@ -98,13 +101,13 @@ pred_long <- predictors %>% pivot_longer(cols=!Site, names_to="predictor", value
 FD_bar <- ggplot(pred_long %>% filter(predictor %in% c('TOP', 'TEve', 'TDiv'))) +
   geom_bar(aes(y=value, x=predictor, fill=Site), stat='identity', position='dodge', color='black') +
   labs(y='Index measure', x=NULL) +
-  scale_fill_viridis_d(begin=0.1, end=0.95, guide="none", option="mako") + looks +
+  scale_fill_cherulean(discrete = T, palette = 'globiceps', guide="none") + looks +
   scale_y_continuous(expand=expansion(mult=c(.0,.05)), limits=c(0,1))
 
 A_bar <- ggplot(pred_long %>% filter(predictor == 'Herb' | predictor == 'Benthic')) +
   geom_bar(aes(y=value, x=predictor, group=Site, fill=Site), stat='identity', position='dodge', color='black') +
   labs(y='Relative abundance', x=NULL) +
-  scale_fill_viridis_d(begin=0.1, end=0.95, guide="none", option="mako") + looks + 
+  scale_fill_cherulean(discrete = T, palette = 'globiceps', guide="none") + looks + 
   scale_y_continuous(expand=expansion(mult=c(.0,.05))) +
   scale_x_discrete(labels=c('Sessile invertivores', 'Herbivores'))
 
@@ -115,3 +118,4 @@ Fig2
 
 # ggsave(plot = Fig2, filename = paste0(fig_dir, "02_traitspaces.svg"), device = "svg", width=30, height=30, units='cm', dpi=300)
 rm(FD_bar, A_bar, bars, global1, global2, t.space, s.hull.v, s.hull.v2, s.space, hull.v, hull.v2)
+point$n <- NULL # necessary for rerunning

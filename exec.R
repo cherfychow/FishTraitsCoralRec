@@ -17,7 +17,7 @@ source('./analysis_code/A04_model_rec.R') # recruitment model constructions + se
 # Figure generation -------------------------------------------------------
 
 # figure save directory relative to the project root
-fig_dir <- '../MS_CoralReefs/rev2/figures/'
+fig_dir <- 'outputs/figures/'
 source('./figure_code/F02_traitspace.R') # trait space visualisation with barplot of predictors
 source('./figure_code/F03_foraging.R') # foraging rates by trophic and functional group
 source('./figure_code/F04_settlement.R') # settlement partial regression plot

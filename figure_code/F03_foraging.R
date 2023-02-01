@@ -1,7 +1,6 @@
 #############################################################################
 
-# FishTraitsxCoralRec
-# Responses to fish trait diversity in coral settlement and recruitment
+# FishTraitsCoralRec
 # Figure 3: Foraging rates by trophic group and functional group
 # Author: Cher Chow
 
@@ -10,6 +9,9 @@
 require(tidyverse)
 require(patchwork)
 require(viridis)
+
+looks <- theme_bw(base_size=13) + theme(panel.grid=element_blank(), axis.ticks=element_line(size=0.3))
+source('https://gist.github.com/cherfychow/e9ae890fd16f4c86730748c067feee2b/raw/c9caceef463062c75c71b42607954f7958818ff7/cherulean.R')
 
 # foraging rates by foraging mode
 feed <- left_join(ForRate, sp.inf, by='Species') %>% mutate(SpFeed=0.01*SpInf*sumLBi) %>% 
@@ -31,10 +33,11 @@ feedtroph <- ggplot(feedT, aes(x=Site, fill=Feed, y=TrophParr)) +
   scale_fill_gradient(low='#EEEEEE', high='black', name='Foraging rate', limits=c(0,50)) + 
   scale_x_discrete(labels=c('CB', 'L', 'NR', 'R', 'SE', 'TB', 'V')) + 
   labs(x='Site', y='Trophic group', title="a")
-feed_total <- ggplot(feed, aes(x=Site, y=SpFeed, fill=Site)) + 
-  geom_boxplot(width=0.75) + looks + 
+feed_total <- ggplot(feed, aes(x=Site, y=SpFeed)) + 
+  geom_boxplot(width=0.6, aes(fill = Site)) + looks + 
+  geom_jitter(shape = 21, color = "#222222", fill = 'transparent', size = 1.5, width = 0.1) +
   scale_x_discrete(labels=c('CB', 'L', 'NR', 'R', 'SE', 'TB', 'V')) + 
-  scale_fill_viridis(alpha=0.6, option="mako", end=0.95, begin=0.1, discrete = T, guide="none") +
+  scale_fill_cherulean(alpha = 0.6, palette = "globiceps", discrete = T, guide="none") +
   labs(x='Study site', y='Foraging rate (cm-bites/min)', title="c")
 
 Fig3 <- (feedtroph + feedforage + feed_total) & theme(legend.position='bottom')

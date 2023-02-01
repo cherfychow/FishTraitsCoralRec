@@ -1,9 +1,7 @@
 #############################################################################
 
 # FishTraitsxCoralRec
-# Responses to fish trait diversity in coral settlement and recruitment
-# Trait weighted foraging rates analysis
-# Author: Cher Chow
+# Trait-weighted foraging rates calculation
 
 #############################################################################
 

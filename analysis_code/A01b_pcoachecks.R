@@ -1,10 +1,8 @@
 
 #############################################################################
 
-# FishTraitsxCoralRec
-# Responses to fish trait diversity in coral settlement and recruitment
+# FishTraitsCoralRec
 # Trait space quality diagnostic plots and checks
-# Author: Cher Chow
 
 #############################################################################
 

@@ -1,10 +1,8 @@
 
 #############################################################################
 
-# FishTraitsxCoralRec
-# Responses to fish trait diversity in coral settlement and recruitment
+# FishTraitsCoralRec
 # Analysis: Trait data extraction
-# Author: Cher Chow
 
 #############################################################################
 

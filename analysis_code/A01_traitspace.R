@@ -1,10 +1,9 @@
 
 #############################################################################
 
-# FishTraitsxCoralRec
-# Responses to fish trait diversity in coral settlement and recruitment
-# Generate trait space for trait diversity analysis
-# Author: Cher Chow
+# FishTraitsCoralRec
+
+# Construct trait space + calculate trait diversity metrics
 
 #############################################################################
 

@@ -1,23 +1,20 @@
 
 #############################################################################
 
-# FishTraitsxCoralRec
-# Responses to fish trait diversity in coral settlement and recruitment
+# FishTraitsCoralRec
 # Coral recruitment model analyses (selection and validation)
-# Author: Cher Chow
 
 #############################################################################
 
 
 require(tidyverse)
 require(lme4)
-require(readxl)
 require(MuMIn)
 require(performance)
 set.seed(24)
 
 # Read in 2018 spat data
-settlement.18 <- read_xlsx('./src/coral_settlement.xlsx', sheet='Sheet1', col_names=T)
+settlement.18 <- read.csv('./src/coral_settlement.csv', header = T)
 str(settlement.18)
 
 
@@ -40,7 +37,7 @@ predictors$Spat2018 <- settlement.18$Spat2018
 predictors$ForRate <- as.vector(predictors$ForRate)
 
 # Import recruit data
-recruits <- read_xlsx('./src/coral_recruit.xlsx', sheet='data', col_names=T, na='NA')
+recruits <- read.csv('./src/coral_recruit.csv', header = T, na.strings='NA')
 str(recruits)
 
 recruits <- recruits %>% drop_na() %>% group_by(site, quadrant) %>% summarise(Recruits=sum(Acrorec,Otherrec,Por,Fa,I)) %>% select(-quadrant)

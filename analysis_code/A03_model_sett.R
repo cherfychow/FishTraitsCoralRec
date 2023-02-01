@@ -1,9 +1,8 @@
 
 #############################################################################
 
-# FishTraitsxCoralRec
+# FishTraitsCoralRec
 # Coral settlement model construction and selection
-# Author: Cher Chow
 
 #############################################################################
 
@@ -32,7 +31,7 @@ looks <- theme_bw(base_size=13) + theme(panel.grid=element_blank(), axis.ticks=e
 ggplot(data = cor.sett %>% filter(value != 1), aes(x=var1, y=name, fill=sqrt(value^2))) + 
   geom_tile() + looks + scale_fill_viridis_c(name=bquote('absolute value'~R^2)) + labs(x=NULL, y=NULL)
 
-settlement <- read_xlsx('./src/coral_settlement.xlsx', sheet='Sheet1', col_names=T)
+settlement <- read.csv('./src/coral_settlement.csv', header = T)
 # head(settlement)
 # str(settlement)
 # select just the 7 study sites and their spat data from 2019
