@@ -1,5 +1,5 @@
 
-# FishTraitsxCoralRec
+# FishTraitsCoralRec
 ### _Coral settlement and recruitment are negatively related to reef fish trait diversity_ 
 The paper is currently in preprint stage and can be found at [https://doi.org/10.1101/2021.10.19.464984](https://doi.org/10.1101/2021.10.19.464984)
 
