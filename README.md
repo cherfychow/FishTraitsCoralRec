@@ -9,7 +9,7 @@
   
 This repository contains the data and code used for the analysis and figure generation for _Coral settlement and recruitment are negatively related to reef fish trait diversity_. The aim of this study was to investigate whether variation in foraging trait diversity of fish assemblages correlates with variation in coral settlement and subsequent recruitment to juvenile cohorts. We used various metrics to describe fish assemblage foraging impact on corals, both directly (i.e. observed foraging rates) and indirectly via foraging traits (trait richness, trait evenness, trait divergence, herbivore abundance, and benthic biter abundance).
   
-**Disclaimer**: This repository will be archived in Zenodo if accepted, however the code may undergo revisions and changes following releases.
+**Disclaimer**: This repository has been archived in Zenodo on its initial release at publication, however the code may undergo revisions and changes following releases.
 
 ## Requirements
 All files were written in R 4.0.0. We recommend executing the repository using this version along with the relevant versions of the packages below.  
