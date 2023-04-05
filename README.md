@@ -1,7 +1,7 @@
 
 # FishTraitsCoralRec
 ### _Coral settlement and recruitment are negatively related to reef fish trait diversity_ 
-The paper is currently in preprint stage and can be found at [https://doi.org/10.1101/2021.10.19.464984](https://doi.org/10.1101/2021.10.19.464984)
+**DOI**: [10.1007/s00338-023-02359-7](https://doi.org/10.1007/s00338-023-02359-7) in _Coral Reefs_ March 2023
 
 **Authors**: Cher F Y Chow, Caitlin Bolton, Nader Boutros, Viviana Brambilla, Luisa Fontoura, Andrew S Hoey, Joshua S Madin, Oscar Pizarro, Damaris Torres-Pulliza, Rachael M Woods, Kyle J A Zawada, Miguel Barbosa, Maria Dornelas 
 
